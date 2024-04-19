@@ -1,8 +1,16 @@
 {
-    "version": "1.1.0-alpha",
-    "thumbnail": "store/Thumbnail.png",
-    "id": "com_gapls_AudioControl",
-    "name": "Audio Control",
-    "description": "This Plugin lets you Control the Volume of your Devices. It can Adjust them with a press of a button by a set amount or set the Volume directly!",
-    "short-description": "Lets you Control the Volume of your Devices"
+    "plugin-name": "AudioControl",
+    "plugin-version": "1.0.0",
+    "minimum-software-version": "2.0.0",
+    "plugin-id": "com_gapls_AudioControl",
+    "github": "https://github.com/G4PLS/AudioControl",
+    "display-name": "Audio Control",
+    "descriptions": {
+        "en_US": "DESCRIPTION",
+        "de_DE": "BESCHREIBUNG"
+    },
+    "short-descriptions": {
+        "en_US": "Lets you Control the Volume of your Devices",
+        "de_DE": "KONTROLLER"
+    }
 }
