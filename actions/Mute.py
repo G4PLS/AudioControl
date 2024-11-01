@@ -3,7 +3,7 @@ import os
 import pulsectl
 from loguru import logger as log
 
-from ..actions.DeviceBase import DeviceBase
+from ..actions.DeviceActionBase import DeviceBase
 
 
 class Mute(DeviceBase):
@@ -34,7 +34,7 @@ class Mute(DeviceBase):
         if event.index == self.device_index:
             with pulsectl.Pulse("mute-event") as pulse:
                 try:
-                    device = self.get_device(self.pulse_filter)
+                    device = self.get_device(self.device_filter)
                     self.display_mute_image(device.mute)
                     self.display_info()
                 except:
@@ -46,7 +46,7 @@ class Mute(DeviceBase):
             return
 
         try:
-            device = self.get_device(self.pulse_filter)
+            device = self.get_device(self.device_filter)
 
             mute_state = 1 if device.mute == 0 else 0
 
@@ -62,7 +62,7 @@ class Mute(DeviceBase):
 
     def update_mute_image(self):
         try:
-            device = self.get_device(self.pulse_filter)
+            device = self.get_device(self.device_filter)
             self.display_mute_image(device.mute)
         except:
             self.show_error(1)
@@ -73,9 +73,10 @@ class Mute(DeviceBase):
 
     def display_info(self):
         volumes = self.get_volumes_from_device()
+        info = ""
         if len(volumes) > 0:
-            self.info = str(int(volumes[0]))
-        super().display_info()
+            info = str(int(volumes[0]))
+        self.set_bottom_label(info)
 
     def display_mute_image(self, mute_state):
         if mute_state == 1:
