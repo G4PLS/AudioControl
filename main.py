@@ -13,11 +13,28 @@ from .actions.VolumeDisplay import VolumeDisplay
 from .actions.DialController import DialController
 from .internal.PulseEventListener import PulseEvent
 
+from .actions.DeviceActionBase import DeviceBase
+
 
 class AudioControl(PluginBase):
     def __init__(self):
         super().__init__()
         self.init_vars()
+
+        self.t = ActionHolder(
+            plugin_base=self,
+            action_base=DeviceBase,
+            action_id_suffix="TEST",
+            action_name="TEST",
+            action_support= {
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.SUPPORTED
+            }
+        )
+        self.add_action_holder(self.t)
+
+
 
         self.mute_action_holder = ActionHolder(
             plugin_base=self,
@@ -27,6 +44,19 @@ class AudioControl(PluginBase):
             action_support={Input.Key: ActionInputSupport.SUPPORTED}
         )
         self.add_action_holder(self.mute_action_holder)
+
+        # Events
+
+        self.pulse_sink_event_holder = PulseEvent(
+            self,
+            "com_gapls_AudioControl::PulseEvent",
+            "sink", "source"
+        )
+        self.add_event_holder(self.pulse_sink_event_holder)
+
+        self.register()
+
+        return
 
         self.set_volume_action_holder = ActionHolder(
             plugin_base=self,
