@@ -2,10 +2,11 @@
 
 == Checklist
 
-- [ ] UI Improvements
+- [X] UI Improvements
 - [ ] Add Standard Device Controls
 - [ ] Improve device name system
 - [ ] Create better store Thumbnail
+- [ ] Update Actions to use new System
 
 === UI Improvements
 Make the overall UI cleaner and nicer to use. The Mock included is a rough guideline how the new UI should look but can  be modified to fit certain needs that may come up in development.
@@ -21,3 +22,6 @@ Taking a look at the way I display device names in the dropdown. There is an imp
 
 === Store Thumbnail
 The current store thumbnail is very simple can be improved visually in a few ways
+
+=== Update Actions
+Because the UI improvements overall made it so that one Base Class got rewritten the actions need to get updated to the new class aswell
