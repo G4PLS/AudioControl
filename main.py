@@ -1,6 +1,9 @@
 # Import StreamController modules
+import os.path
 
 import pulsectl
+
+from locales.LocaleManager import LocaleManager
 from src.backend.PluginManager.ActionHolder import ActionHolder
 from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
 from src.backend.PluginManager.PluginBase import PluginBase
@@ -23,7 +26,7 @@ class AudioControl(PluginBase):
             plugin_base=self,
             action_base=Mute,
             action_id_suffix="Mute",
-            action_name=self.lm.get("action.name.mute"),
+            action_name=self.lm.get("name-mute"),
             action_support={Input.Key: ActionInputSupport.SUPPORTED}
         )
         self.add_action_holder(self.mute_action_holder)
@@ -32,7 +35,7 @@ class AudioControl(PluginBase):
             plugin_base=self,
             action_base=SetVolume,
             action_id_suffix="SetVolume",
-            action_name=self.lm.get("action.name.set-volume"),
+            action_name=self.lm.get("name-set-vol"),
             action_support={Input.Key: ActionInputSupport.SUPPORTED}
         )
         self.add_action_holder(self.set_volume_action_holder)
@@ -41,7 +44,7 @@ class AudioControl(PluginBase):
             plugin_base=self,
             action_base=AdjustVolume,
             action_id_suffix="AdjustVolume",
-            action_name=self.lm.get("action.name.adjust-volume"),
+            action_name=self.lm.get("name-adjust-vol"),
             action_support={Input.Key: ActionInputSupport.SUPPORTED}
         )
         self.add_action_holder(self.adjust_volume_action_holder)
@@ -50,7 +53,7 @@ class AudioControl(PluginBase):
             plugin_base=self,
             action_base=VolumeDisplay,
             action_id_suffix="VolumeDisplay",
-            action_name=self.lm.get("action.name.volume-display"),
+            action_name=self.lm.get("name-vol-display"),
             action_support={Input.Key: ActionInputSupport.SUPPORTED}
         )
         self.add_action_holder(self.volume_display_action_holder)
@@ -59,7 +62,7 @@ class AudioControl(PluginBase):
             plugin_base=self,
             action_base=DialController,
             action_id_suffix="DialController",
-            action_name=self.lm.get("action.name.dial-controller"),
+            action_name=self.lm.get("name-dial"),
             action_support={Input.Dial: ActionInputSupport.UNTESTED}
         )
         self.add_action_holder(self.dial_controller_action_holder)
@@ -76,5 +79,5 @@ class AudioControl(PluginBase):
         self.register()
 
     def init_vars(self):
-        self.lm = self.locale_manager
+        self.lm = LocaleManager(os.path.join(self.PATH, "locales.csv"))
         self.pulse = pulsectl.Pulse("audio-control-main")
