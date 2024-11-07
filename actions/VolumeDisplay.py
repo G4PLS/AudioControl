@@ -1,6 +1,5 @@
 from ..actions.DeviceBase import DeviceBase
 
-
 class VolumeDisplay(DeviceBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -19,9 +18,3 @@ class VolumeDisplay(DeviceBase):
                 self.display_info()
             except:
                 self.show_error(1)
-
-    def display_info(self):
-        volumes = self.get_volumes_from_device()
-        if len(volumes) > 0:
-            self.info = str(int(volumes[0]))
-        super().display_info()
