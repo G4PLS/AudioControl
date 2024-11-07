@@ -26,11 +26,11 @@ class AdjustVolume(DeviceBase):
     def build_ui(self, ui: Adw.PreferencesGroup = None) -> Adw.PreferencesGroup:
         self.ui = super().build_ui()
 
-        self.volume_adjust_scale = ScaleRow(title="Adjust", value=0, min=-50, max=50, step=1, text_left="-50", text_right="50")
+        self.volume_adjust_scale = ScaleRow(title=self.translate("adjust-vol-scale"), value=0, min=-50, max=50, step=1, text_left="-50", text_right="50")
         self.volume_adjust_scale.scale.set_draw_value(True)
         self.volume_adjust_scale.scale.set_size_request(100, 30)
 
-        self.volume_bound_scale = ScaleRow(title="Bounds", value=100, min=0, max=150, step=1, text_left="0", text_right="150")
+        self.volume_bound_scale = ScaleRow(title=self.translate("adjust-bound-scale"), value=100, min=0, max=150, step=1, text_left="0", text_right="150")
         self.volume_bound_scale.scale.set_draw_value(True)
         self.volume_bound_scale.scale.set_size_request(100, 30)
 

@@ -25,9 +25,9 @@ class SetVolume(DeviceBase):
     def build_ui(self, ui: Adw.PreferencesGroup = None) -> Adw.PreferencesGroup:
         self.ui = super().build_ui()
 
-        self.extend_volume_toggle = Adw.SwitchRow(title="Extend Volume")
+        self.extend_volume_toggle = Adw.SwitchRow(title=self.translate("set-extend-toggle"))
 
-        self.volume_scale = ScaleRow(title="Volume", value=0, min=0, max=100, step=1, text_left="0", text_right="100")
+        self.volume_scale = ScaleRow(title=self.translate("set-vol-scale"), value=0, min=0, max=100, step=1, text_left="0", text_right="100")
         self.volume_scale.scale.set_draw_value(True)
         self.volume_scale.scale.set_size_request(100, 30)
 

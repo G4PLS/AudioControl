@@ -82,16 +82,16 @@ class DeviceBase(ActionBase):
         self.settings_grid = AdwGrid()
 
         # Add Device Row
-        self.device_filter_dropdown = SearchComboRow("Device Filter", use_single_line=True, hexpand=False)
-        self.device_dropdown = SearchComboRow("Device", use_single_line=True, hexpand=False)
+        self.device_filter_dropdown = SearchComboRow(self.translate("base-filter-dropdown"), use_single_line=True, hexpand=False)
+        self.device_dropdown = SearchComboRow(self.translate("base-device-dropdown"), use_single_line=True, hexpand=False)
 
         # Add Info Row
-        self.info_toggle = Adw.SwitchRow(title="Show Info", hexpand=False)
-        self.info_content_dropdown = SearchComboRow("Info Content", use_single_line=True, hexpand=False)
+        self.info_toggle = Adw.SwitchRow(title=self.translate("base-info-toggle"), hexpand=False)
+        self.info_content_dropdown = SearchComboRow(self.translate("base-info-content"), use_single_line=True, hexpand=False)
 
         # Add Name Row
-        self.device_name_toggle = Adw.SwitchRow(title="Show Name", hexpand=False)
-        self.device_nick_entry = Adw.EntryRow(title="Device Nick", hexpand=False)
+        self.device_name_toggle = Adw.SwitchRow(title=self.translate("base-name-toggle"), hexpand=False)
+        self.device_nick_entry = Adw.EntryRow(title=self.translate("base-nick"), hexpand=False)
 
         self.settings_grid.add_widget(self.device_filter_dropdown, 0, 0)
         self.settings_grid.add_widget(self.device_dropdown, 1, 0)
@@ -383,3 +383,6 @@ class DeviceBase(ActionBase):
                 self.device_index = device.index
                 self.pulse_device_name = device.name
                 break
+
+    def translate(self, key):
+        return self.plugin_base.lm.get(key)

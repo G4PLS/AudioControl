@@ -58,12 +58,12 @@ class DialController(DeviceBase):
     def build_ui(self, ui: Adw.PreferencesGroup = None) -> Adw.PreferencesGroup:
         self.ui = super().build_ui()
 
-        self.volume_adjust_scale = ScaleRow(title="Adjust", value=0, min=-50, max=50, step=1, text_left="-50",
+        self.volume_adjust_scale = ScaleRow(title=self.translate("adjust-vol-scale"), value=0, min=-50, max=50, step=1, text_left="-50",
                                             text_right="50")
         self.volume_adjust_scale.scale.set_draw_value(True)
         self.volume_adjust_scale.scale.set_size_request(100, 30)
 
-        self.volume_bound_scale = ScaleRow(title="Bounds", value=100, min=0, max=150, step=1, text_left="0",
+        self.volume_bound_scale = ScaleRow(title=self.translate("adjust-bound-scale"), value=100, min=0, max=150, step=1, text_left="0",
                                            text_right="150")
         self.volume_bound_scale.scale.set_draw_value(True)
         self.volume_bound_scale.scale.set_size_request(100, 30)
@@ -79,12 +79,12 @@ class DialController(DeviceBase):
         return self.ui
 
     def _build_behaviour_group(self):
-        behaviour_group = Adw.PreferencesGroup(title="Button Behaviour")
+        behaviour_group = Adw.PreferencesGroup(title=self.translate("dial-behaviour-group"))
 
-        self.behaviour_expander = BetterExpander(title="Behaviour Settings")
+        self.behaviour_expander = BetterExpander(title=self.translate("dial-behaviour-extender"))
         behaviour_group.add(self.behaviour_expander)
 
-        self.behaviour_dropdown = SearchComboRow(title="Press Behaviour", use_single_line=True)
+        self.behaviour_dropdown = SearchComboRow(title=self.translate("dial-behaviour-dropdown"), use_single_line=True)
         self.behaviour_dropdown.populate(self.behaviour_items)
 
         self.behaviour_expander.add_row(self.behaviour_dropdown)
@@ -92,9 +92,9 @@ class DialController(DeviceBase):
         return behaviour_group
 
     def _create_set_volume_ui(self):
-        self.extend_volume_toggle = Adw.SwitchRow(title="Extend Volume")
+        self.extend_volume_toggle = Adw.SwitchRow(title=self.translate("set-extend-toggle"))
 
-        self.volume_scale = ScaleRow(title="Volume", value=0, min=0, max=100, step=1, text_left="0", text_right="100")
+        self.volume_scale = ScaleRow(title=self.translate("set-vol-scale"), value=0, min=0, max=100, step=1, text_left="0", text_right="100")
         self.volume_scale.scale.set_draw_value(True)
         self.volume_scale.scale.set_size_request(100, 30)
 
