@@ -1,4 +1,5 @@
 from ..actions.DeviceBase import DeviceBase
+from ..internal.PulseHelpers import get_standard_device
 
 class VolumeDisplay(DeviceBase):
     def __init__(self, *args, **kwargs):
@@ -13,7 +14,13 @@ class VolumeDisplay(DeviceBase):
 
         event = args[1]
 
-        if event.index == self.device_index:
+        if self.use_standard:
+            device = get_standard_device(self.device_filter)
+            index = device.index
+        else:
+            index = self.device_index
+
+        if event.index == index:
             try:
                 self.display_info()
             except:

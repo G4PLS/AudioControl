@@ -9,7 +9,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gtk
 from loguru import logger as log
 
-from ..internal.PulseHelpers import get_device, set_volume
+from ..internal.PulseHelpers import get_device, set_volume, get_standard_device
 
 
 class SetVolume(DeviceBase):
@@ -110,7 +110,10 @@ class SetVolume(DeviceBase):
             return
 
         try:
-            device = get_device(self.device_filter, self.pulse_device_name)
+            if self.use_standard:
+                device = get_standard_device(self.device_filter)
+            else:
+                device = get_device(self.device_filter, self.pulse_device_name)
             set_volume(device, self.volume)
         except Exception as e:
             log.error(e)
@@ -120,7 +123,19 @@ class SetVolume(DeviceBase):
         if len(args) < 2:
             return
 
-        self.display_info()
+        event = args[1]
+
+        if self.use_standard:
+            device = get_standard_device(self.device_filter)
+            index = device.index
+        else:
+            index = self.device_index
+
+        if event.index == index:
+            try:
+                self.display_info()
+            except:
+                self.show_error(1)
 
     #
     # DISPLAY

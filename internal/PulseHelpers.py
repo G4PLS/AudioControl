@@ -109,3 +109,15 @@ def mute(device, state):
         except Exception as e:
             log.error(e)
             raise PulseError
+
+def get_standard_device(device_filter: DeviceFilter):
+    with pulsectl.Pulse("change-volume") as pulse:
+        try:
+            if device_filter == DeviceFilter.SINK:
+                return get_device(device_filter, pulse.server_info().default_sink_name)
+            elif device_filter == DeviceFilter.SOURCE:
+                return get_device(device_filter, pulse.server_info().default_source_name)
+            return None
+        except Exception as e:
+            log.error(e)
+            raise PulseError

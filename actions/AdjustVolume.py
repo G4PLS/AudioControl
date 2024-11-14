@@ -10,7 +10,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from loguru import logger as log
 
-from ..internal.PulseHelpers import get_device, set_volume, change_volume, get_volumes_from_device
+from ..internal.PulseHelpers import get_device, set_volume, change_volume, get_volumes_from_device, get_standard_device
 
 
 class AdjustVolume(DeviceBase):
@@ -100,13 +100,16 @@ class AdjustVolume(DeviceBase):
             return
 
         try:
-            device = get_device(self.device_filter, self.pulse_device_name)
+            if self.use_standard:
+                device = get_standard_device(self.device_filter)
+            else:
+                device = get_device(self.device_filter, self.pulse_device_name)
 
             if self.volume_adjust < 0:
                 change_volume(device, self.volume_adjust)
                 return
 
-            volumes = get_volumes_from_device(self.device_filter, self.pulse_device_name)
+            volumes = get_volumes_from_device(self.device_filter, device.name)
 
             if len(volumes) > 0 and volumes[0] < self.volume_bounds:
                 if volumes[0] + self.volume_adjust > self.volume_bounds:

@@ -4,7 +4,7 @@ import pulsectl
 from loguru import logger as log
 
 from ..actions.DeviceBase import DeviceBase
-from ..internal.PulseHelpers import get_device, mute, get_volumes_from_device
+from ..internal.PulseHelpers import get_device, mute, get_volumes_from_device, get_standard_device
 
 
 class Mute(DeviceBase):
@@ -27,16 +27,31 @@ class Mute(DeviceBase):
         super().on_device_changed(*args, **kwargs)
         self.update_mute_image()
 
+    def on_use_standard_changed(self, *args):
+        super().on_use_standard_changed(*args)
+        self.update_mute_image()
+
     async def on_pulse_device_change(self, *args, **kwargs):
         if len(args) < 2:
             return
 
+        print(args)
+
         event = args[1]
 
-        if event.index == self.device_index:
+        if self.use_standard:
+            device = get_standard_device(self.device_filter)
+            index = device.index
+        else:
+            index = self.device_index
+
+        if event.index == index:
             with pulsectl.Pulse("mute-event") as pulse:
                 try:
-                    device = get_device(self.device_filter, self.pulse_device_name)
+                    if self.use_standard:
+                        device = get_standard_device(self.device_filter)
+                    else:
+                        device = get_device(self.device_filter, self.pulse_device_name)
                     self.is_muted = bool(device.mute)
                     self.display_mute_image()
                     self.display_info()
@@ -49,7 +64,10 @@ class Mute(DeviceBase):
             return
 
         try:
-            device = get_device(self.device_filter, self.pulse_device_name)
+            if self.use_standard:
+                device = get_standard_device(self.device_filter)
+            else:
+                device = get_device(self.device_filter, self.pulse_device_name)
 
             self.is_muted = not device.mute
             mute(device, self.is_muted)
@@ -64,7 +82,10 @@ class Mute(DeviceBase):
 
     def update_mute_image(self):
         try:
-            device = get_device(self.device_filter, self.pulse_device_name)
+            if self.use_standard:
+                device = get_standard_device(self.device_filter)
+            else:
+                device = get_device(self.device_filter, self.pulse_device_name)
             self.is_muted = bool(device.mute)
             self.display_mute_image()
         except:

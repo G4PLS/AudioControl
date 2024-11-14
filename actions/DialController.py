@@ -8,7 +8,8 @@ from GtkHelper.SearchComboRow import SearchComboRow, SearchComboRowItem
 from ..actions.DeviceBase import DeviceBase
 from ..internal.AdwGrid import AdwGrid
 
-from ..internal.PulseHelpers import get_device, mute, change_volume, set_volume, get_volumes_from_device
+from ..internal.PulseHelpers import get_device, mute, change_volume, set_volume, get_volumes_from_device, \
+    get_standard_device
 
 import gi
 
@@ -221,6 +222,10 @@ class DialController(DeviceBase):
         settings["volume-extend"] = self.extend_volume
         self.set_settings(settings)
 
+    def on_use_standard_changed(self, *args):
+        super().on_use_standard_changed(*args)
+        self.update_mute_image()
+
     def on_volume_changed(self, *args):
         settings = self.get_settings()
 
@@ -241,9 +246,18 @@ class DialController(DeviceBase):
 
         event = args[1]
 
-        if event.index == self.device_index:
+        if self.use_standard:
+            device = get_standard_device(self.device_filter)
+            index = device.index
+        else:
+            index = self.device_index
+
+        if event.index == index:
             try:
-                device = get_device(self.device_filter, self.pulse_device_name)
+                if self.use_standard:
+                    device = get_standard_device(self.device_filter)
+                else:
+                    device = get_device(self.device_filter, self.pulse_device_name)
                 self.is_muted = bool(device.mute)
 
                 self.display_mute_image()
@@ -268,14 +282,17 @@ class DialController(DeviceBase):
             return
 
         try:
-            device = get_device(self.device_filter, self.pulse_device_name)
+            if self.use_standard:
+                device = get_standard_device(self.device_filter)
+            else:
+                device = get_device(self.device_filter, self.pulse_device_name)
 
             # Decreasing Volume
             if direction < 0:
                 change_volume(device, -self.volume_adjust)
                 return
 
-            volumes = get_volumes_from_device(self.device_filter, self.pulse_device_name)
+            volumes = get_volumes_from_device(self.device_filter, device.name)
             if len(volumes) > 0 and volumes[0] < self.volume_bounds:
                 if volumes[0] + self.volume_adjust > self.volume_bounds and direction > 0:
                     set_volume(device, self.volume_bounds)
@@ -287,7 +304,10 @@ class DialController(DeviceBase):
 
     def mute_behaviour(self):
         try:
-            device = get_device(self.device_filter, self.pulse_device_name)
+            if self.use_standard:
+                device = get_standard_device(self.device_filter)
+            else:
+                device = get_device(self.device_filter, self.pulse_device_name)
             self.is_muted = not device.mute
             mute(device, self.is_muted)
             self.display_mute_image()
@@ -297,7 +317,10 @@ class DialController(DeviceBase):
 
     def set_volume_behaviour(self):
         try:
-            device = get_device(self.device_filter, self.pulse_device_name)
+            if self.use_standard:
+                device = get_standard_device(self.device_filter)
+            else:
+                device = get_device(self.device_filter, self.pulse_device_name)
             set_volume(device, self.volume)
         except Exception as e:
             log.error(e)
@@ -308,12 +331,14 @@ class DialController(DeviceBase):
     #
 
     def display_adjustment(self):
-        print("HERE")
         return str(self.volume_adjust)
 
     def update_mute_image(self):
         try:
-            device = get_device(self.device_filter, self.pulse_device_name)
+            if self.use_standard:
+                device = get_standard_device(self.device_filter)
+            else:
+                device = get_device(self.device_filter, self.pulse_device_name)
             self.is_muted = bool(device.mute)
             self.display_mute_image()
         except:

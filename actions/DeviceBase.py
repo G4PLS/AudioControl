@@ -12,7 +12,7 @@ from gi.repository import Adw, GObject, Gtk
 
 from loguru import logger as log
 
-from ..internal.PulseHelpers import get_device_list, filter_proplist, DeviceFilter, get_device, get_volumes_from_device
+from ..internal.PulseHelpers import get_device_list, filter_proplist, DeviceFilter, get_device, get_volumes_from_device, get_standard_device
 
 from GtkHelper.SearchComboRow import SearchComboRow, SearchComboRowItem
 from ..internal.AdwGrid import AdwGrid
@@ -56,6 +56,7 @@ class DeviceBase(ActionBase):
         # Device Selection
         self.device_filter: DeviceFilter = DeviceFilter.SINK  # Filter for displaying devices for said filter
         self.device_name: str = ""  # Device Name after filtering proplist
+        self.use_standard: bool = False
 
         # Info Display
         self.show_info: bool = False  # Toggle to show info
@@ -82,19 +83,25 @@ class DeviceBase(ActionBase):
         self.settings_grid = AdwGrid()
 
         # Add Device Row
-        self.device_filter_dropdown = SearchComboRow(self.translate("base-filter-dropdown"), use_single_line=True, hexpand=False)
-        self.device_dropdown = SearchComboRow(self.translate("base-device-dropdown"), use_single_line=True, hexpand=False)
+        self.device_filter_dropdown = SearchComboRow(self.translate("base-filter-dropdown"), use_single_line=True, hexpand=True)
+        self.device_dropdown = SearchComboRow(self.translate("base-device-dropdown"), use_single_line=True, hexpand=True)
+        self.use_standard_toggle = Adw.SwitchRow()
+        self.use_standard_toggle.set_tooltip_text("Use Standard Device and Ignore selected Device")
+
+        self.device_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.device_box.append(self.device_dropdown)
+        self.device_box.append(self.use_standard_toggle)
 
         # Add Info Row
-        self.info_toggle = Adw.SwitchRow(title=self.translate("base-info-toggle"), hexpand=False)
-        self.info_content_dropdown = SearchComboRow(self.translate("base-info-content"), use_single_line=True, hexpand=False)
+        self.info_toggle = Adw.SwitchRow(title=self.translate("base-info-toggle"), hexpand=True)
+        self.info_content_dropdown = SearchComboRow(self.translate("base-info-content"), use_single_line=True, hexpand=True)
 
         # Add Name Row
-        self.device_name_toggle = Adw.SwitchRow(title=self.translate("base-name-toggle"), hexpand=False)
-        self.device_nick_entry = Adw.EntryRow(title=self.translate("base-nick"), hexpand=False)
+        self.device_name_toggle = Adw.SwitchRow(title=self.translate("base-name-toggle"), hexpand=True)
+        self.device_nick_entry = Adw.EntryRow(title=self.translate("base-nick"), hexpand=True)
 
         self.settings_grid.add_widget(self.device_filter_dropdown, 0, 0)
-        self.settings_grid.add_widget(self.device_dropdown, 1, 0)
+        self.settings_grid.add_widget(self.device_box, 1, 0)
 
         self.settings_grid.add_widget(self.info_toggle, 0, 1)
         self.settings_grid.add_widget(self.info_content_dropdown, 1, 1)
@@ -117,6 +124,7 @@ class DeviceBase(ActionBase):
 
         self.device_filter = DeviceFilter(settings.get("device-filter", DeviceFilter.SINK))
         self.device_name = settings.get("device-name", None)
+        self.use_standard = settings.get("use-standard", False)
 
         self.show_info = settings.get("show-info", False)
         self.info_content = InfoContent(settings.get("info-content", InfoContent.VOLUME))
@@ -124,23 +132,26 @@ class DeviceBase(ActionBase):
         self.show_device_name = settings.get("show-device-name", False)
         self.device_nick = settings.get("nick", None)
 
-        if self.pulse_device_name:
+        device = None
+
+        if self.use_standard:
+            device = get_standard_device(self.device_filter)
+        elif self.pulse_device_name:
             device = get_device(self.device_filter, self.pulse_device_name)
-
-            if not device:
-                return
-
-            self.device_index = device.index
-            self.device_name = filter_proplist(device.proplist)
         else:
-            for device in get_device_list(self.device_filter):
-                if device.description.__contains__("Monitor"):
+            for audio_device in get_device_list(self.device_filter):
+                if audio_device.description.__contains__("Monitor"):
                     continue
 
-                self.device_name = filter_proplist(device.proplist)
-                self.device_index = device.index
-                self.pulse_device_name = device.name
+                device = audio_device
                 break
+
+        if not device:
+            return
+
+        self.device_index = device.index
+        self.device_name = filter_proplist(device.proplist)
+        self.pulse_device_name = device.name
 
     def load_ui_settings(self):
         self.disconnect_events()
@@ -151,6 +162,7 @@ class DeviceBase(ActionBase):
 
         self.info_toggle.set_active(self.show_info)
         self.device_name_toggle.set_active(self.show_device_name)
+        self.use_standard_toggle.set_active(self.use_standard)
 
         self.device_nick_entry.set_text(self.device_nick or "")
 
@@ -208,6 +220,7 @@ class DeviceBase(ActionBase):
     def connect_events(self):
         self.device_filter_dropdown.connect("item-changed", self.on_device_filter_changed)
         self.device_dropdown.connect("item-changed", self.on_device_changed)
+        self.use_standard_toggle.connect("notify::active", self.on_use_standard_changed)
 
         self.info_toggle.connect("notify::active", self.on_info_toggle_changed)
         self.info_content_dropdown.connect("item-changed", self.on_info_content_changed)
@@ -219,6 +232,7 @@ class DeviceBase(ActionBase):
         try:
             self.device_filter_dropdown.disconnect_by_func(self.on_device_filter_changed)
             self.device_dropdown.disconnect_by_func(self.on_device_changed)
+            self.use_standard_toggle.disconnect_by_func(self.on_use_standard_changed)
 
             self.info_toggle.disconnect_by_func(self.on_info_toggle_changed)
             self.info_content_dropdown.disconnect_by_func(self.on_info_content_changed)
@@ -252,6 +266,17 @@ class DeviceBase(ActionBase):
         self.display_info()
 
         settings["pulse-name"] = self.pulse_device_name
+        self.set_settings(settings)
+
+    def on_use_standard_changed(self, *args):
+        settings = self.get_settings()
+
+        self.use_standard = self.use_standard_toggle.get_active()
+
+        self.display_device_name()
+        self.display_info()
+
+        settings["use-standard"] = self.use_standard
         self.set_settings(settings)
 
     def on_info_toggle_changed(self, *args):
@@ -322,6 +347,7 @@ class DeviceBase(ActionBase):
     def on_key_hold_start(self):
         self.load_settings()
         self.display_info()
+        self.display_device_name()
 
     def on_dial_turn(self, direction: int):
         pass
@@ -334,15 +360,16 @@ class DeviceBase(ActionBase):
     #
 
     def display_device_name(self):
-        if not self.on_ready_called:
-            return
-
         if not self.show_device_name:
             self.set_top_label("")
             return
 
         if self.device_nick:
             self.set_top_label(self.device_nick)
+        elif self.use_standard:
+            device = get_standard_device(self.device_filter)
+            name = filter_proplist(device.proplist)
+            self.set_top_label(name)
         else:
             self.set_top_label(self.device_name)
 
@@ -360,7 +387,11 @@ class DeviceBase(ActionBase):
         self.set_bottom_label(info)
 
     def display_volume(self):
-        volumes = get_volumes_from_device(self.device_filter, self.pulse_device_name)
+        if self.use_standard:
+            device_name = get_standard_device(self.device_filter).name
+            volumes = get_volumes_from_device(self.device_filter, device_name)
+        else:
+            volumes = get_volumes_from_device(self.device_filter, self.pulse_device_name)
         if len(volumes) > 0:
             return str(int(volumes[0]))
         return "N/A"
