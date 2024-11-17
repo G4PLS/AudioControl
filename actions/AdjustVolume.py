@@ -126,6 +126,10 @@ class AdjustVolume(DeviceBase):
 
         self.display_info()
 
+    async def on_asset_manager_change(self, *args):
+        if args[1] == "vol-down" or args[1] == "vol-up":
+            self.display_icon()
+
     #
     # DISPLAY
     #
@@ -138,6 +142,7 @@ class AdjustVolume(DeviceBase):
             return
 
         if self.volume_adjust >= 0:
-            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "vol_up.png"))
+            _, render = self.plugin_base.asset_manager.icons.get_asset_values("vol-up")
         else:
-            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "vol_down.png"))
+            _, render = self.plugin_base.asset_manager.icons.get_asset_values("vol-down")
+        self.set_media(render)

@@ -22,6 +22,10 @@ class SetVolume(DeviceBase):
         self.volume: int = 0
         self.extend_volume: bool = False
 
+    def on_ready(self):
+        super().on_ready()
+        self.display_audio_image()
+
     def build_ui(self, ui: Adw.PreferencesGroup = None) -> Adw.PreferencesGroup:
         self.ui = super().build_ui()
 
@@ -137,9 +141,17 @@ class SetVolume(DeviceBase):
             except:
                 self.show_error(1)
 
+    async def on_asset_manager_change(self, *args):
+        if args[1] == "audio":
+            self.display_audio_image()
+
     #
     # DISPLAY
     #
+
+    def display_audio_image(self):
+        _, render = self.plugin_base.asset_manager.icons.get_asset_values("audio")
+        self.set_media(render)
 
     def display_adjustment(self):
         return self.volume

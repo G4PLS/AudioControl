@@ -16,7 +16,7 @@ from ..internal.PulseHelpers import get_device_list, filter_proplist, DeviceFilt
 
 from GtkHelper.SearchComboRow import SearchComboRow, SearchComboRowItem
 from ..internal.AdwGrid import AdwGrid
-
+from ..internal.AssetManager.AssetManagerWindow import Window
 
 class InfoContent(enum.StrEnum):
     VOLUME = "volume",
@@ -51,6 +51,7 @@ class DeviceBase(ActionBase):
         # Internal
         self.pulse_device_name: str = ""  # Actual name of the Pulse Device
         self.device_index: int = None  # Index of the Device
+        self.asset_manager_window = None
 
         # Settings
         # Device Selection
@@ -66,6 +67,8 @@ class DeviceBase(ActionBase):
         self.show_device_name: bool = False  # If you should show the device name
         self.device_nick: str = None  # A nick for any given device
 
+        self.plugin_base.asset_manager.icons.add_listener(self.on_asset_manager_change)
+
     #
     # UI
     #
@@ -79,6 +82,10 @@ class DeviceBase(ActionBase):
 
     def build_ui(self, ui: Adw.PreferencesGroup = None) -> Adw.PreferencesGroup:
         self.ui = ui or Adw.PreferencesGroup()
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+        settings_group = Adw.PreferencesGroup()
+
+        self.asset_manager_button = Gtk.Button(label="Open Asset Manager")
 
         self.settings_grid = AdwGrid()
 
@@ -109,7 +116,12 @@ class DeviceBase(ActionBase):
         self.settings_grid.add_widget(self.device_name_toggle, 0, 2)
         self.settings_grid.add_widget(self.device_nick_entry, 1, 2)
 
-        self.ui.add(self.settings_grid)
+        settings_group.add(self.settings_grid)
+
+        box.append(self.asset_manager_button)
+        box.append(settings_group)
+
+        self.ui.add(box)
 
         return self.ui
 
@@ -218,6 +230,8 @@ class DeviceBase(ActionBase):
     #
 
     def connect_events(self):
+        self.asset_manager_button.connect("clicked", self.on_asset_manager_button_clicked)
+
         self.device_filter_dropdown.connect("item-changed", self.on_device_filter_changed)
         self.device_dropdown.connect("item-changed", self.on_device_changed)
         self.use_standard_toggle.connect("notify::active", self.on_use_standard_changed)
@@ -241,6 +255,11 @@ class DeviceBase(ActionBase):
             self.device_nick_entry.disconnect_by_func(self.on_device_nick_changed)
         except:
             pass
+
+    def on_asset_manager_button_clicked(self, *args):
+        if self.asset_manager_window is None:
+            self.create_asset_manager_window()
+            self.asset_manager_window.present()
 
     def on_device_filter_changed(self, _, item: DeviceFilterItem, index):
         settings = self.get_settings()
@@ -322,6 +341,9 @@ class DeviceBase(ActionBase):
 
         settings["nick"] = self.device_nick
         self.set_settings(settings)
+
+    async def on_asset_manager_change(self, *args):
+        pass
 
     #
     # ACTION EVENTS
@@ -416,4 +438,11 @@ class DeviceBase(ActionBase):
                 break
 
     def translate(self, key):
-        return self.plugin_base.lm.get(key)
+        return self.plugin_base.locale_manager.get(key)
+
+    def create_asset_manager_window(self):
+        self.asset_manager_window = Window(self.plugin_base.asset_manager)
+        self.asset_manager_window.connect("close-request", self.manager_destroyed)
+
+    def manager_destroyed(self, *args):
+        self.asset_manager_window = None

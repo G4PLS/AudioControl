@@ -35,8 +35,6 @@ class Mute(DeviceBase):
         if len(args) < 2:
             return
 
-        print(args)
-
         event = args[1]
 
         if self.use_standard:
@@ -76,6 +74,10 @@ class Mute(DeviceBase):
             log.error(e)
             self.show_error(1)
 
+    async def on_asset_manager_change(self, *args):
+        if args[1] == "mute" or args[1] == "audio":
+            self.display_mute_image()
+
     #
     # MISC
     #
@@ -102,6 +104,7 @@ class Mute(DeviceBase):
 
     def display_mute_image(self):
         if self.is_muted:
-            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "mute.png"))
+            _, render = self.plugin_base.asset_manager.icons.get_asset_values("mute")
         else:
-            self.set_media(media_path=os.path.join(self.plugin_base.PATH, "assets", "audio.png"))
+            _, render = self.plugin_base.asset_manager.icons.get_asset_values("audio")
+        self.set_media(render)
