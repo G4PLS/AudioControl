@@ -8,7 +8,7 @@ from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.InputIdentifier import Input
 
-from data.plugins.com_gapls_AudioController.internal.AssetManager.AssetManager import AssetManager, Color, Icon
+from .internal.AssetManager.AssetManager import AssetManager, Icon
 
 from .actions.AdjustVolume import AdjustVolume
 from .actions.Mute import Mute
