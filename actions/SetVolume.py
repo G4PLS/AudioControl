@@ -150,8 +150,11 @@ class SetVolume(DeviceBase):
     #
 
     def display_audio_image(self):
-        _, render = self.plugin_base.asset_manager.icons.get_asset_values("audio")
-        self.set_media(render)
+        result = self.plugin_base.asset_manager.icons.get_asset_values("audio")
+
+        if result:
+            _, render = result
+            self.set_media(render)
 
     def display_adjustment(self):
         return self.volume

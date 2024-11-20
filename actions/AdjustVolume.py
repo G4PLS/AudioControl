@@ -142,7 +142,10 @@ class AdjustVolume(DeviceBase):
             return
 
         if self.volume_adjust >= 0:
-            _, render = self.plugin_base.asset_manager.icons.get_asset_values("vol-up")
+            result = self.plugin_base.asset_manager.icons.get_asset_values("vol-up")
         else:
-            _, render = self.plugin_base.asset_manager.icons.get_asset_values("vol-down")
-        self.set_media(render)
+            result = self.plugin_base.asset_manager.icons.get_asset_values("vol-up")
+
+        if result:
+            _, render = result
+            self.set_media(render)
