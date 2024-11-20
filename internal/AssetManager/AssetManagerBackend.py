@@ -74,7 +74,7 @@ class Manager:
     def remove_override(self, key: str):
         if self._asset_overrides.__contains__(key):
             del self._asset_overrides[key]
-            #self._observer.notify(ManagerEvent.OVERRIDE_REMOVE, key)
+            self._observer.notify(ManagerEvent.OVERRIDE_REMOVE, key)
 
     def change_override(self, key: str, *values):
         if self._asset_overrides.__contains__(key):
