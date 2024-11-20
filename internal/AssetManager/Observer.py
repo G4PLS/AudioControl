@@ -18,9 +18,11 @@ class Observer:
             self.observers.remove(observer)
 
     def notify(self, *args, **kwargs):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self._notify(*args, **kwargs))
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(self._notify(*args, **kwargs))  # Schedule _notify as a coroutine
+        else:
+            loop.run_until_complete(self._notify(*args, **kwargs))
 
     async def _notify(self, *args, **kwargs):
         coroutines = [self._ensure_coroutine(observer, *args, **kwargs) for observer in self.observers]
