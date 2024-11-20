@@ -39,7 +39,7 @@ class Manager:
         self._asset_type: type = asset_type
         self._assets: dict[str, asset_type] = {}
         self._asset_overrides: dict[str, asset_type] = {}
-        self._observer = None #Observer()
+        self._observer = Observer()
         self._json_key = json_key
 
     # Assets
@@ -47,19 +47,19 @@ class Manager:
     def add_asset(self, key: str, asset: Asset, override: bool = False):
         if not self._assets.__contains__(key) or override:
             self._assets[key] = asset
-            #self._observer.notify(ManagerEvent.ADD, key, asset)
+            self._observer.notify(ManagerEvent.ADD, key, asset)
 
     def remove_asset(self, key: str):
         if self._assets.__contains__(key):
             del self._assets[key]
-            #self._observer.notify(ManagerEvent.REMOVE, key)
+            self._observer.notify(ManagerEvent.REMOVE, key)
 
     def change_asset(self, key: str, *values):
         if self._assets.__contains__(key):
             asset = self.get_asset(key, skip_override=True)
             asset.change(*values)
             self._assets[key] = asset
-            #self._observer.notify(ManagerEvent.CHANGE, key, asset, {values: values})
+            self._observer.notify(ManagerEvent.CHANGE, key, asset, {values: values})
 
     # Overrides
 
@@ -69,7 +69,7 @@ class Manager:
 
         if not self._asset_overrides.__contains__(key) or override:
             self._asset_overrides[key] = asset
-            #self._observer.notify(ManagerEvent.OVERRIDE_ADD, key, asset)
+            self._observer.notify(ManagerEvent.OVERRIDE_ADD, key, asset)
 
     def remove_override(self, key: str):
         if self._asset_overrides.__contains__(key):
@@ -81,7 +81,7 @@ class Manager:
             override = self.get_asset(key)
             override.change(*values)
             self._asset_overrides[key] = override
-            #self._observer.notify(ManagerEvent.OVERRIDE_CHANGE, key, override, {"values": values})
+            self._observer.notify(ManagerEvent.OVERRIDE_CHANGE, key, override, {"values": values})
 
     # Getter
 
@@ -113,11 +113,9 @@ class Manager:
     # Observer
 
     def add_listener(self, callback: callable):
-        return
         self._observer.subscribe(callback)
 
     def remove_listener(self, callback: callable):
-        return
         self._observer.unsubscribe(callback)
 
     # Save/Load
