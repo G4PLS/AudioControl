@@ -18,8 +18,11 @@ class Observer:
             self.observers.remove(observer)
 
     def notify(self, *args, **kwargs):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        try:
+            loop = asyncio.get_event_loop()
+        except:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
         loop.run_until_complete(self._notify(*args, **kwargs))
 
     async def _notify(self, *args, **kwargs):
