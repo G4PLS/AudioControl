@@ -75,7 +75,6 @@ class Mute(DeviceBase):
             self.show_error(1)
 
     async def on_asset_manager_change(self, *args):
-        print(args)
         if args[1] == "mute" or args[1] == "audio":
             self.display_mute_image()
 
