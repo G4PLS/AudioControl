@@ -4,7 +4,6 @@ Year: 2024
 """
 
 import asyncio
-from loguru import logger as log
 
 class Observer:
     def __init__(self):
@@ -19,13 +18,9 @@ class Observer:
             self.observers.remove(observer)
 
     def notify(self, *args, **kwargs):
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            print("RUNNING")
-            asyncio.ensure_future(self._notify(*args, **kwargs))  # Schedule _notify as a coroutine
-        else:
-            print("NOT RUNNING")
-            loop.run_until_complete(self._notify(*args, **kwargs))
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self._notify(*args, **kwargs))
 
     async def _notify(self, *args, **kwargs):
         coroutines = [self._ensure_coroutine(observer, *args, **kwargs) for observer in self.observers]
@@ -38,5 +33,5 @@ class Observer:
             try:
                 return await asyncio.to_thread(callback, *args, **kwargs)
             except Exception as e:
-                log.error(f"Callback {callback.__name__} in {self.event_id} could not be called")
+                #log.error(f"Callback {callback.__name__} in {self.event_id} could not be called")
                 return await asyncio.sleep(0)
