@@ -39,7 +39,7 @@ class Manager:
         self._asset_type: type = asset_type
         self._assets: dict[str, asset_type] = {}
         self._asset_overrides: dict[str, asset_type] = {}
-        self._observer = Observer()
+        self._observer = None #Observer()
         self._json_key = json_key
 
     # Assets
@@ -113,9 +113,11 @@ class Manager:
     # Observer
 
     def add_listener(self, callback: callable):
+        return
         self._observer.subscribe(callback)
 
     def remove_listener(self, callback: callable):
+        return
         self._observer.unsubscribe(callback)
 
     # Save/Load
