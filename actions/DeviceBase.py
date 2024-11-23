@@ -3,6 +3,7 @@ import enum
 import gi
 import pulsectl
 
+from globals import settings
 from src.backend.DeckManagement.InputIdentifier import InputEvent, Input
 from src.backend.PluginManager.ActionBase import ActionBase
 
@@ -16,7 +17,6 @@ from ..internal.PulseHelpers import get_device_list, filter_proplist, DeviceFilt
 
 from GtkHelper.SearchComboRow import SearchComboRow, SearchComboRowItem
 from ..internal.AdwGrid import AdwGrid
-from ..internal.AssetManager.AssetManagerWindow import Window
 
 class InfoContent(enum.StrEnum):
     VOLUME = "volume",
@@ -51,7 +51,6 @@ class DeviceBase(ActionBase):
         # Internal
         self.pulse_device_name: str = ""  # Actual name of the Pulse Device
         self.device_index: int = None  # Index of the Device
-        self.asset_manager_window = None
 
         # Settings
         # Device Selection
@@ -82,10 +81,6 @@ class DeviceBase(ActionBase):
 
     def build_ui(self, ui: Adw.PreferencesGroup = None) -> Adw.PreferencesGroup:
         self.ui = ui or Adw.PreferencesGroup()
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
-        settings_group = Adw.PreferencesGroup()
-
-        self.asset_manager_button = Gtk.Button(label="Open Asset Manager")
 
         self.settings_grid = AdwGrid()
 
@@ -116,12 +111,7 @@ class DeviceBase(ActionBase):
         self.settings_grid.add_widget(self.device_name_toggle, 0, 2)
         self.settings_grid.add_widget(self.device_nick_entry, 1, 2)
 
-        settings_group.add(self.settings_grid)
-
-        box.append(self.asset_manager_button)
-        box.append(settings_group)
-
-        self.ui.add(box)
+        self.ui.add(self.settings_grid)
 
         return self.ui
 
@@ -439,10 +429,3 @@ class DeviceBase(ActionBase):
 
     def translate(self, key):
         return self.plugin_base.locale_manager.get(key)
-
-    def create_asset_manager_window(self):
-        self.asset_manager_window = Window(self.plugin_base.asset_manager)
-        self.asset_manager_window.connect("close-request", self.manager_destroyed)
-
-    def manager_destroyed(self, *args):
-        self.asset_manager_window = None

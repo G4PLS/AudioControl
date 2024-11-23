@@ -4,7 +4,7 @@ import pulsectl
 from loguru import logger as log
 
 from ..actions.DeviceBase import DeviceBase
-from ..internal.PulseHelpers import get_device, mute, get_volumes_from_device, get_standard_device
+from ..internal.PulseHelpers import get_device, mute, get_standard_device
 
 
 class Mute(DeviceBase):

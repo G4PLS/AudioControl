@@ -5,10 +5,9 @@ import pulsectl
 
 from src.backend.PluginManager.ActionHolder import ActionHolder
 from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
+from src.backend.PluginManager.AssetManagment.PluginAssetManager import Icon
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.InputIdentifier import Input
-
-from .internal.AssetManager.AssetManager import AssetManager, Icon
 
 from .actions.AdjustVolume import AdjustVolume
 from .actions.Mute import Mute
@@ -81,7 +80,6 @@ class AudioControl(PluginBase):
 
     def init_vars(self):
         self.pulse = pulsectl.Pulse("audio-control-main")
-        self.asset_manager = AssetManager(save_path=os.path.join(self.PATH, "asset_overrides.json"))
 
         self.asset_manager.icons.add_asset("mute", Icon(path=self.get_asset_path("mute.png")))
         self.asset_manager.icons.add_asset("audio", Icon(path=self.get_asset_path("audio.png")))
