@@ -3,9 +3,15 @@ import enum
 import pulsectl
 from loguru import logger as log
 
-class DeviceFilter(enum.StrEnum):
-    SINK = "sink",
-    SOURCE = "source",
+from GtkHelper.ComboRow import SimpleComboRowItem
+
+
+class DeviceFilter(enum.Enum):
+    SINK = SimpleComboRowItem("sink", "Sink")
+    SOURCE = SimpleComboRowItem("source", "Source")
+
+    def get_value(self):
+        return self.value.get_value()
 
 def filter_proplist(proplist) -> str | None:
     filters: list[str] = [
@@ -54,9 +60,9 @@ def get_device(filter: DeviceFilter, pulse_device_name):
     with pulsectl.Pulse("device-getter") as pulse:
         try:
             device = None
-            if filter == DeviceFilter.SINK:
+            if filter == DeviceFilter.SINK.get_value():
                 device = pulse.get_sink_by_name(pulse_device_name)
-            elif filter == DeviceFilter.SOURCE:
+            elif filter == DeviceFilter.SOURCE.get_value():
                 device = pulse.get_source_by_name(pulse_device_name)
             return device
         except Exception as e:
@@ -67,10 +73,10 @@ def get_device(filter: DeviceFilter, pulse_device_name):
 def get_device_list(filter: DeviceFilter):
     with pulsectl.Pulse("device-list-getter") as pulse:
         switch = {
-            DeviceFilter.SINK: pulse.sink_list(),
-            DeviceFilter.SOURCE: pulse.source_list(),
+            DeviceFilter.SINK.get_value(): pulse.sink_list(),
+            DeviceFilter.SOURCE.get_value(): pulse.source_list(),
         }
-        return switch.get(filter, {})
+        return switch.get(filter.get_value(), {})
 
 
 def get_volumes_from_device(device_filter: DeviceFilter, pulse_device_name: str):
@@ -82,7 +88,6 @@ def get_volumes_from_device(device_filter: DeviceFilter, pulse_device_name: str)
         log.error(f"Error while getting volumes from device: {pulse_device_name} with filter: {device_filter}. Error: {e}")
         return []
 
-
 def change_volume(device, adjust):
     with pulsectl.Pulse("change-volume") as pulse:
         try:
@@ -90,9 +95,16 @@ def change_volume(device, adjust):
         except Exception as e:
             log.error(f"Error while changing volume on device: {device.name}, adjustment is {adjust}. Error: {e}")
 
-def set_volume(device, volume):
+
+
+def set_volume(filter, name, volume):
+    print(filter)
+    print(name)
+    print(volume)
+
     with pulsectl.Pulse("change-volume") as pulse:
         try:
+            device = get_device(filter, name)
             pulse.volume_set_all_chans(device, volume * 0.01)
         except Exception as e:
             log.error(f"Error while setting volume on device: {device.name}, volume is {volume}. Error: {e}")
@@ -107,9 +119,9 @@ def mute(device, state):
 def get_standard_device(device_filter: DeviceFilter):
     with pulsectl.Pulse("change-volume") as pulse:
         try:
-            if device_filter == DeviceFilter.SINK:
+            if device_filter == DeviceFilter.SINK.value:
                 return get_device(device_filter, pulse.server_info().default_sink_name)
-            elif device_filter == DeviceFilter.SOURCE:
+            elif device_filter == DeviceFilter.SOURCE.value:
                 return get_device(device_filter, pulse.server_info().default_source_name)
             return None
         except Exception as e:

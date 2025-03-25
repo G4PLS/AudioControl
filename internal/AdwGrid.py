@@ -11,14 +11,18 @@ class AdwGrid(Adw.PreferencesRow):
         super().__init__(*args, **kwargs)
 
         self.main_box = Gtk.Box()
-        self.set_child(self.main_box)
-        self.main_box.set_hexpand(False)
+
+        self.main_box.set_hexpand(True)
+        self.main_box.set_vexpand(False)
 
         self.grid = Gtk.Grid()
         self.grid.set_halign(Gtk.Align.FILL)
         self.grid.set_hexpand(True)
+        self.grid.set_vexpand(False)
         self.grid.set_column_homogeneous(True)
+
         self.main_box.append(self.grid)
+        self.set_child(self.main_box)
 
     def add_widget(self, widget: Gtk.Widget, column: int, row: int, width: int = 1, height: int = 1):
         """
