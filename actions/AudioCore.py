@@ -2,6 +2,7 @@ import enum
 from dataclasses import dataclass
 
 from GtkHelper.GenerativeUI.EntryRow import EntryRow
+from GtkHelper.GenerativeUI.ExpanderRow import ExpanderRow
 from GtkHelper.GenerativeUI.SwitchRow import SwitchRow
 from GtkHelper.GenerativeUI.ToggleRow import ToggleRow
 from GtkHelper.GtkHelper import BetterExpander
@@ -47,15 +48,14 @@ class AudioCore(ActionCore):
         self.selected_device: Device = None
 
         self.device_filter: DeviceFilter = None
-        self.info_content = None
+        self.info_content = InfoContent.VOLUME.value
 
-        self.show_device_name = None
-        self.device_nick = None
+        self.show_device_name = True
+        self.device_nick = ""
 
-        self.show_info_content = None
-        self.info_content = None
+        self.show_info_content = True
 
-        self.use_standard_device = None
+        self.use_standard_device = False
 
         self.loaded_devices: list[Device] = []
 
@@ -66,59 +66,85 @@ class AudioCore(ActionCore):
         self._icon_name = ""
 
     def create_generative_ui(self):
+        self.device_expander = ExpanderRow(
+            action_core=self,
+            var_name="device-expander",
+            default_value=False,
+            title="Device Row",
+            show_enable_switch=False
+        )
+
         self.standard_device_switch = SwitchRow(
             action_core=self,
-            var_name="device.use-standard",
+            var_name="use-standard",
             default_value=False,
             title="Standard Device",
-            auto_add=False,
-            complex_var_name=True,
+            complex_var_name=False,
             on_change=self.show_standard_device_changed
         )
 
         self.device_filter_combo_row = ComboRow(
             action_core=self,
-            var_name="device.filter",
+            var_name="filter",
             default_value=DeviceFilter.SINK.value,
             items=[DeviceFilter.SINK.value, DeviceFilter.SOURCE.value],
             title="base-filter-dropdown",
-            auto_add=False,
-            complex_var_name=True,
+            complex_var_name=False,
             on_change=self.device_filter_changed
         )
 
         self.device_combo_row = ComboRow(
             action_core=self,
-            var_name="device.pulse-name",
+            var_name="pulse-name",
             default_value="",
             items=[],
             title="base-device-dropdown",
-            auto_add=False,
-            complex_var_name=True,
+            complex_var_name=False,
             on_change=self.device_changed
         )
 
+        self.device_expander.add_row(self.standard_device_switch.widget)
+        self.device_expander.add_row(self.device_filter_combo_row.widget)
+        self.device_expander.add_row(self.device_combo_row.widget)
+
         # Use Standard Device Toggle/Switch
+
+        self.info_expander = ExpanderRow(
+            action_core=self,
+            var_name="info-expander",
+            default_value=False,
+            title="Info Row",
+            show_enable_switch=False
+        )
 
         self.info_content_switch = SwitchRow(
             action_core=self,
-            var_name="info-content.visible",
+            var_name="info-content-visible",
             default_value=True,
             title="base-info-toggle",
-            auto_add=False,
-            complex_var_name=True,
+            complex_var_name=False,
             on_change=self.show_info_content_changed
         )
 
         self.info_content_combo_row = ComboRow(
             action_core=self,
-            var_name="info-content.type",
+            var_name="info-content-type",
             default_value=InfoContent.VOLUME.value,
             items=[InfoContent.VOLUME.value, InfoContent.ADJUSTMENT.value],
             title="base-info-content",
-            auto_add=False,
-            complex_var_name=True,
+            complex_var_name=False,
             on_change=self.info_content_changed
+        )
+
+        self.info_expander.add_row(self.info_content_switch.widget)
+        self.info_expander.add_row(self.info_content_combo_row.widget)
+
+        self.device_name_expander = ExpanderRow(
+            action_core=self,
+            var_name="device-name-expander",
+            default_value=False,
+            title="Device Name Row",
+            show_enable_switch=False
         )
 
         self.device_name_switch = SwitchRow(
@@ -126,54 +152,27 @@ class AudioCore(ActionCore):
             var_name="show-device-name",
             default_value=True,
             title="base-name-toggle",
-            auto_add=False,
             on_change=self.show_device_nick_changed
         )
 
         self.device_nick_entry = EntryRow(
             action_core=self,
-            var_name="device.nick",
+            var_name="device-nick",
             default_value="",
             title="base-nick",
-            auto_add=False,
-            complex_var_name=True,
+            complex_var_name=False,
             on_change=self.device_nick_changed
         )
 
+        self.device_name_expander.add_row(self.device_name_switch.widget)
+        self.device_name_expander.add_row(self.device_nick_entry.widget)
+
         self.device_filter = self.device_filter_combo_row.get_selected_item()
 
-    def get_config_rows(self) -> "list[Adw.PreferencesRow]":
-        self.standard_device_switch.unparent()
-        self.device_filter_combo_row.unparent()
-        self.device_combo_row.unparent()
-        self.info_content_switch.unparent()
-        self.info_content_combo_row.unparent()
-        self.device_name_switch.unparent()
-        self.device_nick_entry.unparent()
-
-        device_expander = BetterExpander(title="Device")
-
-        device_expander.add_row(self.standard_device_switch.widget)
-        device_expander.add_row(self.device_filter_combo_row.widget)
-        device_expander.add_row(self.device_combo_row.widget)
-
-        info_expander = BetterExpander(title="Info")
-
-        info_expander.add_row(self.info_content_switch.widget)
-        info_expander.add_row(self.info_content_combo_row.widget)
-
-        device_name_expander = BetterExpander(title="Device Name")
-
-        device_name_expander.add_row(self.device_name_switch.widget)
-        device_name_expander.add_row(self.device_nick_entry.widget)
-
-        self.load_devices()
-
-        return [device_expander, info_expander, device_name_expander]
-
     def on_ready(self):
-        self.load_devices()
-        self.set_current_icon()
+        self.display_device_name()
+        self.display_device_info()
+        self.display_icon()
 
     def on_tick(self):
         self.check_standard_device()
@@ -204,7 +203,6 @@ class AudioCore(ActionCore):
     # UI Events
 
     def show_standard_device_changed(self, widget, value, old):
-        print(self.__class__.__name__)
         self.use_standard_device = value
         self.device_combo_row.widget.set_sensitive(not self.use_standard_device)
         self.check_standard_device()
@@ -215,6 +213,7 @@ class AudioCore(ActionCore):
 
     def device_changed(self, widget, value, old):
         self.selected_device = value
+
         self.display_device_name()
         self.display_device_info()
 
@@ -241,6 +240,9 @@ class AudioCore(ActionCore):
             self.set_top_label("")
             return
 
+        if not self.device_nick and not self.selected_device:
+            return
+
         if self.device_nick and self.device_nick != "":
             self.set_top_label(self.device_nick)
         else:
@@ -259,6 +261,9 @@ class AudioCore(ActionCore):
             self.set_bottom_label("")
 
     def display_volume(self):
+        if not self.device_filter or not self.selected_device:
+            return
+
         volumes = get_volumes_from_device(self.device_filter, self.selected_device.pulse_name)
 
         if len(volumes) > 0:
@@ -266,7 +271,7 @@ class AudioCore(ActionCore):
         return "N/A"
 
     def display_adjustment(self):
-        pass
+        return "B"
 
     async def icon_changed(self, event: str, key: str, asset):
         if not key in self.icon_keys:
@@ -296,7 +301,7 @@ class AudioCore(ActionCore):
         if self.use_standard_device:
             standard_device = get_standard_device(self.device_filter)
 
-            if self.selected_device.pulse_name == standard_device.name:
+            if self.selected_device is None or self.selected_device.pulse_name == standard_device.name:
                 return
 
             for device in self.loaded_devices:

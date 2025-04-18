@@ -15,6 +15,7 @@ from .actions.AudioCore import AudioCore
 
 from .actions.Mute import Mute
 from .actions.SetVolume import SetVolume
+from .actions.AdjustVolume import AdjustVolume
 
 from .globals import Icons
 
@@ -63,6 +64,19 @@ class AudioControl(PluginBase):
             }
         )
         self.add_action_holder(self.set_volume)
+
+        self.volume_adjust = ActionHolder(
+            plugin_base=self,
+            action_core=AdjustVolume,
+            action_id_suffix="AdjustVolume",
+            action_name="Adjust Volume",
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.UNTESTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
+        )
+        self.add_action_holder(self.volume_adjust)
 
         # Events
 

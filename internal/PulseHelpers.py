@@ -78,7 +78,6 @@ def get_device_list(filter: DeviceFilter):
         }
         return switch.get(filter.get_value(), {})
 
-
 def get_volumes_from_device(device_filter: DeviceFilter, pulse_device_name: str):
     try:
         device = get_device(device_filter, pulse_device_name)
@@ -97,14 +96,9 @@ def change_volume(device, adjust):
 
 
 
-def set_volume(filter, name, volume):
-    print(filter)
-    print(name)
-    print(volume)
-
+def set_volume(device, volume):
     with pulsectl.Pulse("change-volume") as pulse:
         try:
-            device = get_device(filter, name)
             pulse.volume_set_all_chans(device, volume * 0.01)
         except Exception as e:
             log.error(f"Error while setting volume on device: {device.name}, volume is {volume}. Error: {e}")
