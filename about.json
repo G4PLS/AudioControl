@@ -1,24 +1,13 @@
 {
   "author": "G4PLS",
   "release-notes": {
-      "path": "release_notes.notes",
-      "version": "1.0.0"
+      "path": "changelog",
+      "version": "2.6.0"
   },
   "credits": {
-    "Main": [
-        "HEY",
-        "NOPE"
-    ],
+    "Code By": ["G4PLS https://github.com/G4PLS"],
     "Contributors": [
-        "CORE",
-        "GAPLS"
+      "Core447 https://github.com/Core447"
     ]
-  },
-  "comments": {
-    "en_US": "COMMENT",
-    "de_DE": "KOMMENTAR"
-  },
-  "acknowledgements": {
-    "SECTION": ["PEOPLE"]
   }
 }

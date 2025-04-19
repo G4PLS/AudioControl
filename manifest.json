@@ -1,18 +1,18 @@
 {
   "name": "Audio Control",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "minimum-app-version": "1.5.0",
-  "app-version": "1.5.0-beta.9",
+  "app-version": "1.5.0-beta.10",
   "id": "com_gapls_AudioControl",
   "github": "https://github.com/G4PLS/AudioControl",
-  "thumbnail": "store/Thumbnail.png",
+  "thumbnail": "store/thumbnail.png",
   "descriptions": {
-    "en_US": "This Plugin allows you to take control over your Output devices by changing the Volume, Setting the Volume or Muting devices",
-    "de_DE": "Gibt dir die Kontrolle über deine Audio Geräte. Das Plugin kann die Lautstärke ändern, setzen oder Geräte Stummschalten"
+    "en_US": "AudioController brings powerful audio management capabilities to StreamController. From setting and adjusting volumes to toggling devices, muting, and displaying device information, this plugin offers a flexible and efficient way to control your system’s audio.",
+    "de_DE": "AudioController bringt leistungsstarke Audiosteuerungsfunktionen in StreamController. Vom Einstellen und Anpassen der Lautstärke über das Umschalten von Geräten und das Stummschalten bis hin zur Anzeige von Geräteinformationen bietet dieses Plugin eine flexible und effiziente Möglichkeit, die Audioausgabe deines Systems zu steuern."
   },
   "short-descriptions": {
-    "en_US": "Lets you Control the Volume of your Output Devices",
-    "de_DE": "Gibt dir die Kontrolle über deine Audio Geräte"
+    "en_US": "Flexible and powerful audio control for your system via StreamController.",
+    "de_DE": "Flexible und leistungsstarke Audiosteuerung für dein System mit StreamController."
   },
   "tags": [
     "Audio",
