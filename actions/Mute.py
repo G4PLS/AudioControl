@@ -13,14 +13,6 @@ class Mute(AudioCore):
 
         self.icon_keys = [Icons.MUTED, Icons.UNMUTED]
 
-        self.event_manager.add_event_assigner(
-            EventAssigner(
-                id="mute",
-                ui_label="Mute",
-                default_event=Input.Key.Events.DOWN,
-                callback=self.on_mute
-            ))
-
         self.plugin_base.connect_to_event(event_id="com_gapls_AudioControl::PulseEvent",
                                           callback=self.on_pulse_device_change)
 
@@ -28,9 +20,18 @@ class Mute(AudioCore):
 
         self.create_generative_ui()
 
-    def on_ready(self):
-        super().on_ready()
+    def create_event_assigners(self):
+        self.add_event_assigner(EventAssigner(
+            id="mute-key",
+            ui_label="Mute",
+            default_events=[Input.Key.Events.DOWN, Input.Dial.Events.DOWN],
+            callback=self.on_mute
+        ))
+
+    def on_update(self):
         self.update_mute_image()
+        super().on_update()
+        return
 
     def on_mute(self, event):
         if self.selected_device is None:
@@ -38,22 +39,24 @@ class Mute(AudioCore):
             return
 
         try:
-            device = get_device(self.device_filter_combo_row.get_selected_item(), self.selected_device.pulse_name)
+            device = get_device(self.device_filter, self.selected_device.pulse_name)
             self.mute(device)
         except Exception as e:
+            log.error(f"Error while muting: {e}")
             self.show_error(1)
 
     ########### UI STUFF ###########
 
     def update_mute_image(self):
-        with pulsectl.Pulse("mute-event") as pulse:
+        with pulsectl.Pulse(f"mute-event") as pulse:
             try:
-                device = get_device(self.device_filter_combo_row.get_selected_item(), self.selected_device.pulse_name)
+                device = get_device(self.device_filter, self.selected_device.pulse_name)
                 self.is_muted = bool(device.mute)
 
                 self.set_current_icon()
                 self.display_device_info()
             except Exception as e:
+                log.error(f"Error while updating mute image: {e}")
                 self.show_error(1)
 
     def mute(self, device):
@@ -74,14 +77,8 @@ class Mute(AudioCore):
         self.display_icon()
 
     async def on_pulse_device_change(self, *args, **kwargs):
-        if len(args) < 2:
-            return
-
-        event = args[1]
-        index = self.selected_device.pulse_index
-
-        if event.index == index:
-            self.update_mute_image()
+        await super().on_pulse_device_change(*args, **kwargs)
+        self.update_mute_image()
 
     def display_adjustment(self):
         if self.is_muted:

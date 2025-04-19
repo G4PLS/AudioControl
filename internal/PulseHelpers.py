@@ -94,9 +94,20 @@ def change_volume(device, adjust):
         except Exception as e:
             log.error(f"Error while changing volume on device: {device.name}, adjustment is {adjust}. Error: {e}")
 
+def set_default_device(device_filter: DeviceFilter, pulse_device_name: str):
+    try:
+        device = get_device(device_filter, pulse_device_name)
 
+        with pulsectl.Pulse("device-setter") as pulse:
+            if device_filter == DeviceFilter.SINK.value:
+                pulse.sink_default_set(device)
+            elif device_filter == DeviceFilter.SOURCE.value:
+                pulse.source_default_set(device)
+    except Exception as e:
+        log.error(f"Error while settings default device: {e}")
 
 def set_volume(device, volume):
+    print(volume)
     with pulsectl.Pulse("change-volume") as pulse:
         try:
             pulse.volume_set_all_chans(device, volume * 0.01)

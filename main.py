@@ -16,6 +16,7 @@ from .actions.AudioCore import AudioCore
 from .actions.Mute import Mute
 from .actions.SetVolume import SetVolume
 from .actions.AdjustVolume import AdjustVolume
+from .actions.ToggleDefaultDevice import ToggleDefaultDevice
 
 from .globals import Icons
 
@@ -34,7 +35,7 @@ class AudioControl(PluginBase):
             action_support= {
                 Input.Key: ActionInputSupport.SUPPORTED,
                 Input.Dial: ActionInputSupport.SUPPORTED,
-                Input.Touchscreen: ActionInputSupport.SUPPORTED
+                Input.Touchscreen: ActionInputSupport.UNTESTED
             }
         )
         self.add_action_holder(self.test)
@@ -46,7 +47,7 @@ class AudioControl(PluginBase):
             action_name="Mute",
             action_support= {
                 Input.Key: ActionInputSupport.SUPPORTED,
-                Input.Dial: ActionInputSupport.UNTESTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
                 Input.Touchscreen: ActionInputSupport.UNTESTED
             }
         )
@@ -59,7 +60,7 @@ class AudioControl(PluginBase):
             action_name="Set Volume",
             action_support= {
                 Input.Key: ActionInputSupport.SUPPORTED,
-                Input.Dial: ActionInputSupport.UNTESTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
                 Input.Touchscreen: ActionInputSupport.UNTESTED
             }
         )
@@ -78,6 +79,19 @@ class AudioControl(PluginBase):
         )
         self.add_action_holder(self.volume_adjust)
 
+        self.toggle_default_device = ActionHolder(
+            plugin_base=self,
+            action_core=ToggleDefaultDevice,
+            action_id_suffix="ToggleDefaultDevice",
+            action_name="Toggle Default Device",
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.UNTESTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
+        )
+        self.add_action_holder(self.toggle_default_device)
+
         # Events
 
         self.pulse_sink_event_holder = PulseEvent(
@@ -93,7 +107,12 @@ class AudioControl(PluginBase):
     def init_vars(self):
         self.pulse = pulsectl.Pulse("audio-control-main")
 
-        self.add_icon(Icons.MUTED, self.get_asset_path("mute.png"))
-        self.add_icon(Icons.UNMUTED, self.get_asset_path("audio.png"))
-        self.add_icon(Icons.VOLUME_DOWN, self.get_asset_path("vol_down.png"))
-        self.add_icon(Icons.VOLUME_UP, self.get_asset_path("vol_up.png"))
+        size = 0.7
+
+        self.add_icon(Icons.MUTED, self.get_asset_path("audio_muted.png"), size)
+        self.add_icon(Icons.UNMUTED, self.get_asset_path("audio.png"), size)
+        self.add_icon(Icons.VOLUME_DOWN, self.get_asset_path("volume_down.png"), size)
+        self.add_icon(Icons.VOLUME_UP, self.get_asset_path("volume_up.png"), size)
+        self.add_icon(Icons.SPEAKER_DEFAULT, self.get_asset_path("speaker_default.png"), size)
+        self.add_icon(Icons.HEADPHONE_DEFAULT, self.get_asset_path("headphone_default.png"), size)
+        self.add_icon(Icons.NONE_DEFAULT, self.get_asset_path("none_default.png"), size)

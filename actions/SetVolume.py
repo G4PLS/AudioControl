@@ -18,14 +18,6 @@ class SetVolume(AudioCore):
         self._icon_name = Icons.UNMUTED
         self._current_icon = self.get_icon(Icons.UNMUTED)
 
-        self.event_manager.add_event_assigner(
-            EventAssigner(
-                id="set_volume",
-                ui_label="Set Volume",
-                default_event=Input.Key.Events.DOWN,
-                callback=self.on_set_volume
-            ))
-
         self.volume: int = 50
         self.extend_volume: bool = False
 
@@ -64,6 +56,14 @@ class SetVolume(AudioCore):
         self.volume_expander.add_row(self.extend_volume_switch.widget)
         self.volume_expander.add_row(self.volume_slider.widget)
 
+    def create_event_assigners(self):
+        self.add_event_assigner(EventAssigner(
+            id="set-volume-key",
+            ui_label="Set Volume",
+            default_events=[Input.Key.Events.DOWN, Input.Dial.Events.DOWN],
+            callback=self.on_set_volume
+        ))
+
     def on_ready(self):
         super().on_ready()
 
@@ -73,7 +73,7 @@ class SetVolume(AudioCore):
             return
 
         try:
-            device = get_device(self.device_filter_combo_row.get_selected_item(), self.selected_device.pulse_name)
+            device = get_device(self.device_filter, self.selected_device.pulse_name)
             set_volume(device, self.volume)
         except Exception as e:
             log.error(e)

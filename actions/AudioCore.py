@@ -12,6 +12,7 @@ from ..internal.PulseHelpers import DeviceFilter, get_device_list, filter_propli
 from src.backend.PluginManager.ActionCore import ActionCore
 from src.backend.PluginManager.EventAssigner import EventAssigner
 from src.backend.DeckManagement.InputIdentifier import InputEvent, Input
+from loguru import logger as log
 
 import gi
 from gi.repository import Adw
@@ -43,6 +44,9 @@ class AudioCore(ActionCore):
 
         self.plugin_base.asset_manager.icons.add_listener(self.icon_changed)
 
+        self.plugin_base.connect_to_event(event_id="com_gapls_AudioControl::PulseEvent",
+                                          callback=self.on_pulse_device_change)
+
         # Settings
 
         self.selected_device: Device = None
@@ -64,6 +68,8 @@ class AudioCore(ActionCore):
         self.icon_keys = []
         self._current_icon = None
         self._icon_name = ""
+
+        self.create_event_assigners()
 
     def create_generative_ui(self):
         self.device_expander = ExpanderRow(
@@ -169,33 +175,41 @@ class AudioCore(ActionCore):
 
         self.device_filter = self.device_filter_combo_row.get_selected_item()
 
-    def on_ready(self):
+    def create_event_assigners(self):
+        pass
+
+    def on_update(self):
         self.display_device_name()
         self.display_device_info()
         self.display_icon()
+        return
 
     def on_tick(self):
         self.check_standard_device()
 
     def load_devices(self):
-        device_list = get_device_list(self.device_filter)
+        try:
+            device_list = get_device_list(self.device_filter)
 
-        self.loaded_devices = []
+            self.loaded_devices = []
 
-        for device in device_list:
-            if device.description.__contains__("Monitor"):
-                continue
+            for device in device_list:
+                if device.description.__contains__("Monitor"):
+                    continue
 
-            device_name = filter_proplist(device.proplist)
+                device_name = filter_proplist(device.proplist)
 
-            if device_name is None:
-                continue
+                if device_name is None:
+                    continue
 
-            self.loaded_devices.append(Device(
-                pulse_name=device.name,
-                pulse_index=device.index,
-                device_name=device_name
-            ))
+                self.loaded_devices.append(Device(
+                    pulse_name=device.name,
+                    pulse_index=device.index,
+                    device_name=device_name
+                ))
+        except Exception as e:
+            log.error(f"Error while populating device list: {e}")
+            return
 
         self.device_combo_row.populate(self.loaded_devices, self.device_combo_row.get_value())
         self.display_device_info()
@@ -284,6 +298,17 @@ class AudioCore(ActionCore):
         self._icon_name = key
 
         self.display_icon()
+
+    async def on_pulse_device_change(self, *args, **kwargs):
+        if len(args) < 2 or self.selected_device is None:
+            return
+
+        event = args[1]
+        index = self.selected_device.pulse_index
+
+        if event.index == index:
+            self.display_icon()
+            self.display_device_info()
 
     def display_icon(self):
         if not self._current_icon:
