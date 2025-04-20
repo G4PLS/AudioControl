@@ -1,11 +1,12 @@
-from src.backend.DeckManagement.InputIdentifier import Input
-from .AudioCore import AudioCore
-from src.backend.PluginManager.EventAssigner import EventAssigner
-from ..internal.PulseHelpers import get_device, mute
-from loguru import logger as log
 import pulsectl
+from loguru import logger as log
 
+from src.backend.DeckManagement.InputIdentifier import Input
+from src.backend.PluginManager.EventAssigner import EventAssigner
+from .AudioCore import AudioCore
 from ..globals import Icons
+from ..internal.PulseHelpers import get_device, mute
+
 
 class Mute(AudioCore):
     def __init__(self, *args, **kwargs):
@@ -22,7 +23,7 @@ class Mute(AudioCore):
 
     def create_event_assigners(self):
         self.add_event_assigner(EventAssigner(
-            id="mute-key",
+            id="mute",
             ui_label="Mute",
             default_events=[Input.Key.Events.DOWN, Input.Dial.Events.DOWN],
             callback=self.on_mute

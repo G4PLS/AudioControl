@@ -2,13 +2,13 @@
 import os.path
 
 import pulsectl
+from gi.repository import Gtk
 
 from src.backend.PluginManager.ActionHolder import ActionHolder
 from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.InputIdentifier import Input
-
-
+from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 
 from .internal.PulseEventListener import PulseEvent
 from .actions.AudioCore import AudioCore
@@ -17,8 +17,10 @@ from .actions.Mute import Mute
 from .actions.SetVolume import SetVolume
 from .actions.AdjustVolume import AdjustVolume
 from .actions.ToggleDefaultDevice import ToggleDefaultDevice
+from .actions.VolumeWarning import VolumeWarning
+from .actions.AudioDisplay import AudioDisplay
 
-from .globals import Icons
+from .globals import Icons, Colors
 
 class AudioControl(PluginBase):
     def __init__(self):
@@ -29,9 +31,9 @@ class AudioControl(PluginBase):
 
         self.test = ActionHolder(
             plugin_base=self,
-            action_core=AudioCore,
-            action_id_suffix="AudioCore",
-            action_name="AudioCore",
+            action_core=AudioDisplay,
+            action_id_suffix="AudioDisplay",
+            action_name="Audio Display",
             action_support= {
                 Input.Key: ActionInputSupport.SUPPORTED,
                 Input.Dial: ActionInputSupport.SUPPORTED,
@@ -73,7 +75,7 @@ class AudioControl(PluginBase):
             action_name="Adjust Volume",
             action_support={
                 Input.Key: ActionInputSupport.SUPPORTED,
-                Input.Dial: ActionInputSupport.UNTESTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
                 Input.Touchscreen: ActionInputSupport.UNTESTED
             }
         )
@@ -86,11 +88,24 @@ class AudioControl(PluginBase):
             action_name="Toggle Default Device",
             action_support={
                 Input.Key: ActionInputSupport.SUPPORTED,
-                Input.Dial: ActionInputSupport.UNTESTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
                 Input.Touchscreen: ActionInputSupport.UNTESTED
             }
         )
         self.add_action_holder(self.toggle_default_device)
+
+        self.volume_warning = ActionHolder(
+            plugin_base=self,
+            action_core=VolumeWarning,
+            action_id_suffix="VolumeWarning",
+            action_name="Volume Warning",
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
+        )
+        self.add_action_holder(self.volume_warning)
 
         # Events
 
@@ -104,10 +119,19 @@ class AudioControl(PluginBase):
 
         self.register()
 
+    def get_selector_icon(self) -> Gtk.Widget:
+        _, rendered = self.asset_manager.icons.get_asset_values(Icons.MAIN)
+        return Gtk.Image.new_from_pixbuf(image2pixbuf(rendered))
+
     def init_vars(self):
         self.pulse = pulsectl.Pulse("audio-control-main")
 
+        self.add_color(Colors.VOLUME_OK, (0,0,0,0))
+        self.add_color(Colors.VOLUME_WARNING, (111,29,29,255))
+
         size = 0.7
+
+        self.add_icon(Icons.MAIN, self.get_asset_path("main_icon.png"))
 
         self.add_icon(Icons.MUTED, self.get_asset_path("audio_muted.png"), size)
         self.add_icon(Icons.UNMUTED, self.get_asset_path("audio.png"), size)

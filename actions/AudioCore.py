@@ -1,28 +1,21 @@
 import enum
-from dataclasses import dataclass
 
+from loguru import logger as log
+
+from GtkHelper.ComboRow import SimpleComboRowItem, BaseComboRowItem
+from GtkHelper.GenerativeUI.ComboRow import ComboRow
 from GtkHelper.GenerativeUI.EntryRow import EntryRow
 from GtkHelper.GenerativeUI.ExpanderRow import ExpanderRow
 from GtkHelper.GenerativeUI.SwitchRow import SwitchRow
-from GtkHelper.GenerativeUI.ToggleRow import ToggleRow
-from GtkHelper.GtkHelper import BetterExpander
-from ..internal.AdwGrid import AdwGrid
+from src.backend.PluginManager.ActionCore import ActionCore
 from ..internal.PulseHelpers import DeviceFilter, get_device_list, filter_proplist, get_volumes_from_device, \
     get_standard_device
-from src.backend.PluginManager.ActionCore import ActionCore
-from src.backend.PluginManager.EventAssigner import EventAssigner
-from src.backend.DeckManagement.InputIdentifier import InputEvent, Input
-from loguru import logger as log
 
-import gi
-from gi.repository import Adw
-
-from GtkHelper.GenerativeUI.ComboRow import ComboRow
-from GtkHelper.ComboRow import SimpleComboRowItem, BaseComboRowItem
 
 class InfoContent(enum.Enum):
     VOLUME = SimpleComboRowItem("volume", "Volume")
     ADJUSTMENT = SimpleComboRowItem("adjustment", "Adjustment")
+
 
 class Device(BaseComboRowItem):
     def __init__(self, pulse_name, pulse_index, device_name):
@@ -36,6 +29,7 @@ class Device(BaseComboRowItem):
 
     def get_value(self):
         return self.pulse_name
+
 
 class AudioCore(ActionCore):
     def __init__(self, *args, **kwargs):
@@ -66,6 +60,7 @@ class AudioCore(ActionCore):
         # Icon
 
         self.icon_keys = []
+
         self._current_icon = None
         self._icon_name = ""
 
@@ -93,7 +88,7 @@ class AudioCore(ActionCore):
             action_core=self,
             var_name="filter",
             default_value=DeviceFilter.SINK.value,
-            items=[DeviceFilter.SINK.value, DeviceFilter.SOURCE.value],
+            items=[device_filter.value for device_filter in DeviceFilter],
             title="base-filter-dropdown",
             complex_var_name=False,
             on_change=self.device_filter_changed
@@ -136,7 +131,7 @@ class AudioCore(ActionCore):
             action_core=self,
             var_name="info-content-type",
             default_value=InfoContent.VOLUME.value,
-            items=[InfoContent.VOLUME.value, InfoContent.ADJUSTMENT.value],
+            items=[info_content.value for info_content in InfoContent],
             title="base-info-content",
             complex_var_name=False,
             on_change=self.info_content_changed

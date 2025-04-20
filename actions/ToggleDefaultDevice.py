@@ -1,18 +1,15 @@
+import gi
+
 from GtkHelper.GenerativeUI.ComboRow import ComboRow
 from GtkHelper.GenerativeUI.ExpanderRow import ExpanderRow
 from GtkHelper.GenerativeUI.SwitchRow import SwitchRow
+from src.backend.DeckManagement.InputIdentifier import Input
 from src.backend.PluginManager.ActionCore import ActionCore
-from src.backend.DeckManagement.InputIdentifier import InputEvent, Input
-from src.backend.PluginManager.PluginSettings.Asset import Color, Icon
 from src.backend.PluginManager.EventAssigner import EventAssigner
-
-from GtkHelper.GtkHelper import better_disconnect
-
-import gi
+from src.backend.PluginManager.PluginSettings.Asset import Color, Icon
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
 
 from ..internal.PulseHelpers import DeviceFilter, get_device_list, filter_proplist, get_volumes_from_device, \
     get_standard_device, set_default_device
@@ -25,10 +22,12 @@ from ..globals import Icons
 
 from enum import StrEnum
 
+
 class DeviceSelection(StrEnum):
     NONE = "none"
     SPEAKER = "speaker"
     HEADPHONE = "headphone"
+
 
 class ToggleDefaultDevice(ActionCore):
     def __init__(self, *args, **kwargs):
@@ -317,7 +316,12 @@ class ToggleDefaultDevice(ActionCore):
         return "N/A"
 
     def display_adjustment(self):
-        return ""
+        selection, _ = self.get_selected_device()
+
+        if selection == DeviceSelection.SPEAKER:
+            return "Device 1"
+        elif selection == DeviceSelection.HEADPHONE:
+            return "Device 2"
 
     # ----------# Asset Management #----------#
     # Contains all methods that handle Asset Management

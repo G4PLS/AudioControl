@@ -1,14 +1,14 @@
+from loguru import logger as log
+
 from GtkHelper.GenerativeUI.ExpanderRow import ExpanderRow
 from GtkHelper.GenerativeUI.ScaleRow import ScaleRow
 from GtkHelper.GenerativeUI.SwitchRow import SwitchRow
 from src.backend.DeckManagement.InputIdentifier import Input
-from .AudioCore import AudioCore
 from src.backend.PluginManager.EventAssigner import EventAssigner
-from ..internal.PulseHelpers import get_device, mute, set_volume
-from loguru import logger as log
-import pulsectl
-
+from .AudioCore import AudioCore
 from ..globals import Icons
+from ..internal.PulseHelpers import get_device, set_volume
+
 
 class SetVolume(AudioCore):
     def __init__(self, *args, **kwargs):
@@ -58,7 +58,7 @@ class SetVolume(AudioCore):
 
     def create_event_assigners(self):
         self.add_event_assigner(EventAssigner(
-            id="set-volume-key",
+            id="set-volume",
             ui_label="Set Volume",
             default_events=[Input.Key.Events.DOWN, Input.Dial.Events.DOWN],
             callback=self.on_set_volume

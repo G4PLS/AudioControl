@@ -1,13 +1,13 @@
+from loguru import logger as log
+
 from GtkHelper.GenerativeUI.ExpanderRow import ExpanderRow
 from GtkHelper.GenerativeUI.ScaleRow import ScaleRow
 from src.backend.DeckManagement.InputIdentifier import Input
-from .AudioCore import AudioCore
 from src.backend.PluginManager.EventAssigner import EventAssigner
-from ..internal.PulseHelpers import get_device, mute, change_volume, get_volumes_from_device, set_volume
-from loguru import logger as log
-import pulsectl
-
+from .AudioCore import AudioCore
 from ..globals import Icons
+from ..internal.PulseHelpers import get_device, change_volume, get_volumes_from_device, set_volume
+
 
 class AdjustVolume(AudioCore):
     def __init__(self, *args, **kwargs):
@@ -66,7 +66,7 @@ class AdjustVolume(AudioCore):
             default_events=[Input.Key.Events.DOWN, Input.Dial.Events.TURN_CW],
             callback=self.event_adjust_volume_positive
         ))
-        
+
         self.add_event_assigner(EventAssigner(
             id="adjust-volume-negative",
             ui_label="Adjust Volume Negative",

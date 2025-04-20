@@ -107,7 +107,6 @@ def set_default_device(device_filter: DeviceFilter, pulse_device_name: str):
         log.error(f"Error while settings default device: {e}")
 
 def set_volume(device, volume):
-    print(volume)
     with pulsectl.Pulse("change-volume") as pulse:
         try:
             pulse.volume_set_all_chans(device, volume * 0.01)
