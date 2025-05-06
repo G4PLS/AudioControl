@@ -6,12 +6,12 @@ from gi.repository import Gtk
 
 from src.backend.PluginManager.ActionHolder import ActionHolder
 from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
+from src.backend.PluginManager.EventHolder import EventHolder
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.InputIdentifier import Input
 from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 
 from .internal.PulseEventListener import PulseEvent
-from .actions.AudioCore import AudioCore
 
 from .actions.Mute import Mute
 from .actions.SetVolume import SetVolume
@@ -19,6 +19,7 @@ from .actions.AdjustVolume import AdjustVolume
 from .actions.ToggleDefaultDevice import ToggleDefaultDevice
 from .actions.VolumeWarning import VolumeWarning
 from .actions.AudioDisplay import AudioDisplay
+from .actions.SetDefaultDevice import SetDefaultDevice
 
 from .globals import Icons, Colors
 
@@ -29,7 +30,7 @@ class AudioControl(PluginBase):
 
         self.has_plugin_settings = True
 
-        self.test = ActionHolder(
+        self.audio_display = ActionHolder(
             plugin_base=self,
             action_core=AudioDisplay,
             action_id_suffix="AudioDisplay",
@@ -40,7 +41,7 @@ class AudioControl(PluginBase):
                 Input.Touchscreen: ActionInputSupport.UNTESTED
             }
         )
-        self.add_action_holder(self.test)
+        self.add_action_holder(self.audio_display)
 
         self.mute = ActionHolder(
             plugin_base=self,
@@ -93,6 +94,19 @@ class AudioControl(PluginBase):
             }
         )
         self.add_action_holder(self.toggle_default_device)
+
+        self.set_default_device = ActionHolder(
+            plugin_base=self,
+            action_core=SetDefaultDevice,
+            action_id_suffix="SetDefaultDevice",
+            action_name="Set Default Device",
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
+        )
+        self.add_action_holder(self.set_default_device)
 
         self.volume_warning = ActionHolder(
             plugin_base=self,
