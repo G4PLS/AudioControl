@@ -35,7 +35,7 @@ class SetVolume(AudioCore):
 
         self.extend_volume_switch = SwitchRow(
             action_core=self,
-            var_name="extend-volume",
+            var_name="volume-extend",
             default_value=False,
             title="Extend Volume Slider",
             on_change=self.extend_volume_changed

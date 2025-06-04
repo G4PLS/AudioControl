@@ -86,7 +86,7 @@ class AudioCore(ActionCore):
 
         self.device_filter_combo_row = ComboRow(
             action_core=self,
-            var_name="filter",
+            var_name="device-filter",
             default_value=DeviceFilter.SINK.value,
             items=[device_filter.value for device_filter in DeviceFilter],
             title="base-filter-dropdown",
@@ -120,7 +120,7 @@ class AudioCore(ActionCore):
 
         self.info_content_switch = SwitchRow(
             action_core=self,
-            var_name="info-content-visible",
+            var_name="show-info",
             default_value=True,
             title="base-info-toggle",
             complex_var_name=False,
@@ -129,7 +129,7 @@ class AudioCore(ActionCore):
 
         self.info_content_combo_row = ComboRow(
             action_core=self,
-            var_name="info-content-type",
+            var_name="info-content",
             default_value=InfoContent.VOLUME.value,
             items=[info_content.value for info_content in InfoContent],
             title="base-info-content",
@@ -158,7 +158,7 @@ class AudioCore(ActionCore):
 
         self.device_nick_entry = EntryRow(
             action_core=self,
-            var_name="device-nick",
+            var_name="nick",
             default_value="",
             title="base-nick",
             complex_var_name=False,
