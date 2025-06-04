@@ -1,152 +1,129 @@
-import os
-
-import gi
-from gi.repository import Adw
-
-from GtkHelper.GtkHelper import ScaleRow
-from ..actions.DeviceBase import DeviceBase
-
-gi.require_version("Gtk", "4.0")
-gi.require_version("Adw", "1")
 from loguru import logger as log
 
-from ..internal.PulseHelpers import get_device, set_volume, change_volume, get_volumes_from_device, get_standard_device
+from GtkHelper.GenerativeUI.ExpanderRow import ExpanderRow
+from GtkHelper.GenerativeUI.ScaleRow import ScaleRow
+from src.backend.DeckManagement.InputIdentifier import Input
+from src.backend.PluginManager.EventAssigner import EventAssigner
+from .AudioCore import AudioCore
+from ..globals import Icons
+from ..internal.PulseHelpers import get_device, change_volume, get_volumes_from_device, set_volume
 
 
-class AdjustVolume(DeviceBase):
+class AdjustVolume(AudioCore):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.plugin_base.connect_to_event(event_id="com_gapls_AudioControl::PulseEvent",
-                                          callback=self.on_pulse_device_change)
+        self.icon_keys = [Icons.VOLUME_UP, Icons.VOLUME_DOWN]
 
-        self.volume_adjust: int = 1
-        self.volume_bounds: int = 100
+        self.adjust: int = 1
+        self.bounds = 100
 
-    def build_ui(self, ui: Adw.PreferencesGroup = None) -> Adw.PreferencesGroup:
-        self.ui = super().build_ui()
+        self.create_generative_ui()
 
-        self.volume_adjust_scale = ScaleRow(title=self.translate("adjust-vol-scale"), value=0, min=-50, max=50, step=1, text_left="-50", text_right="50")
-        self.volume_adjust_scale.scale.set_draw_value(True)
-        self.volume_adjust_scale.scale.set_size_request(100, 30)
+    def create_generative_ui(self):
+        super().create_generative_ui()
 
-        self.volume_bound_scale = ScaleRow(title=self.translate("adjust-bound-scale"), value=100, min=0, max=150, step=1, text_left="0", text_right="150")
-        self.volume_bound_scale.scale.set_draw_value(True)
-        self.volume_bound_scale.scale.set_size_request(100, 30)
+        self.volume_adjust_row = ExpanderRow(
+            action_core=self,
+            var_name="adjust-expander",
+            default_value=False,
+            title="Volume Adjust Row",
+        )
 
-        self.settings_grid.add_widget(self.volume_adjust_scale, 0, 3)
-        self.settings_grid.add_widget(self.volume_bound_scale, 1, 3)
+        self.volume_adjust_scale = ScaleRow(
+            action_core=self,
+            var_name="volume-adjust",
+            default_value=1,
+            min=-100,
+            max=100,
+            step=1,
+            digits=0,
+            title="Adjustment",
+            draw_value=True,
+            on_change=self.on_volume_adjust_change
+        )
 
-        return self.ui
+        self.volume_bound_scale = ScaleRow(
+            action_core=self,
+            var_name="volume-bounds",
+            default_value=100,
+            min=0,
+            max=150,
+            step=1,
+            digits=0,
+            title="Maximum Audio Bounds",
+            draw_value=True,
+            on_change=self.on_volume_bound_change
+        )
 
-    #
-    # BASE SETTINGS LOADER
-    #
+        self.volume_adjust_row.add_row(self.volume_adjust_scale.widget)
+        self.volume_adjust_row.add_row(self.volume_bound_scale.widget)
 
-    def load_settings(self):
-        super().load_settings()
+    def create_event_assigners(self):
+        self.add_event_assigner(EventAssigner(
+            id="adjust-volume-positive",
+            ui_label="Adjust Volume Positive",
+            default_events=[Input.Key.Events.DOWN, Input.Dial.Events.TURN_CW],
+            callback=self.event_adjust_volume_positive
+        ))
 
-        settings = self.get_settings()
+        self.add_event_assigner(EventAssigner(
+            id="adjust-volume-negative",
+            ui_label="Adjust Volume Negative",
+            default_event=Input.Dial.Events.TURN_CCW,
+            callback=self.event_adjust_volume_negative
+        ))
 
-        self.volume_adjust = settings.get("volume-adjust", 1)
-        self.volume_bounds = settings.get("volume-bounds", 100)
-        self.display_icon()
+    def event_adjust_volume_positive(self, event):
+        self.adjust_volume()
 
-    def load_ui_settings(self):
-        super().load_ui_settings()
+    def event_adjust_volume_negative(self, event):
+        self.adjust_volume(-1)
 
-        self.volume_adjust_scale.scale.set_value(self.volume_adjust)
-        self.volume_bound_scale.scale.set_value(self.volume_bounds)
+    def adjust_volume(self, modifier: int = 1):
+        adjustment = self.adjust * modifier
 
-    #
-    # EVENTS
-    #
-
-    def connect_events(self):
-        super().connect_events()
-
-        self.volume_adjust_scale.scale.connect("value-changed", self.on_volume_adjust_changed)
-        self.volume_bound_scale.scale.connect("value-changed", self.on_volume_bounds_changed)
-
-    def disconnect_events(self):
-        super().disconnect_events()
-        try:
-            self.volume_adjust_scale.scale.disconnect_by_func(self.on_volume_adjust_changed)
-            self.volume_bound_scale.scale.disconnect_by_func(self.on_volume_bounds_changed)
-        except:
-            pass
-
-    def on_volume_adjust_changed(self, *args, **kwargs):
-        settings = self.get_settings()
-
-        self.volume_adjust = self.volume_adjust_scale.scale.get_value()
-
-        self.display_info()
-        self.display_icon()
-
-        settings["volume-adjust"] = self.volume_adjust
-        self.set_settings(settings)
-
-    def on_volume_bounds_changed(self, *args, **kwargs):
-        settings = self.get_settings()
-
-        self.volume_bounds = self.volume_bound_scale.scale.get_value()
-
-        settings["volume-bounds"] = self.volume_bounds
-        self.set_settings(settings)
-
-    def on_key_down(self):
-        if None in (self.pulse_device_name, self.volume_adjust):
+        if self.selected_device is None:
             self.show_error(1)
             return
 
         try:
-            if self.use_standard:
-                device = get_standard_device(self.device_filter)
-            else:
-                device = get_device(self.device_filter, self.pulse_device_name)
+            device = get_device(self.device_filter, self.selected_device.pulse_name)
 
-            if self.volume_adjust < 0:
-                change_volume(device, self.volume_adjust)
+            if adjustment < 0:
+                change_volume(device, adjustment)
                 return
 
             volumes = get_volumes_from_device(self.device_filter, device.name)
 
-            if len(volumes) > 0 and volumes[0] < self.volume_bounds:
-                if volumes[0] + self.volume_adjust > self.volume_bounds:
-                    set_volume(device, self.volume_bounds)
+            if len(volumes) > 0 and volumes[0] < self.bounds:
+                if volumes[0] + adjustment > self.bounds:
+                    set_volume(device, self.bounds)
                 else:
-                    change_volume(device, self.volume_adjust)
+                    change_volume(device, adjustment)
         except Exception as e:
             log.error(e)
             self.show_error(1)
 
-    async def on_pulse_device_change(self, *args, **kwargs):
-        if len(args) < 2:
-            return
+    def on_volume_adjust_change(self, widget, value, old):
+        self.adjust = value
+        self.display_device_info()
+        self.set_current_icon()
 
-        self.display_info()
+    def on_volume_bound_change(self, widget, value, old):
+        self.bounds = value
 
-    async def on_asset_manager_change(self, *args):
-        if args[1] == "vol-down" or args[1] == "vol-up":
-            self.display_icon()
+    ########### UI STUFF ###########
 
-    #
-    # DISPLAY
-    #
+    def set_current_icon(self):
+        if self.adjust >= 0:
+            self._current_icon = self.get_icon(Icons.VOLUME_UP)
+            self._icon_name = Icons.VOLUME_UP
+        else:
+            self._current_icon = self.get_icon(Icons.VOLUME_DOWN)
+            self._icon_name = Icons.VOLUME_DOWN
+
+        self.display_icon()
 
     def display_adjustment(self):
-        return str(self.volume_adjust)
-
-    def display_icon(self):
-        if self.volume_adjust is None:
-            return
-
-        if self.volume_adjust >= 0:
-            result = self.plugin_base.asset_manager.icons.get_asset_values("vol-up")
-        else:
-            result = self.plugin_base.asset_manager.icons.get_asset_values("vol-down")
-
-        if result:
-            _, render = result
-            self.set_media(render)
+        return f"{"+" if self.adjust > 0 else ""}{self.adjust}"

@@ -1,110 +1,87 @@
-import os
-
 import pulsectl
 from loguru import logger as log
 
-from ..actions.DeviceBase import DeviceBase
-from ..internal.PulseHelpers import get_device, mute, get_volumes_from_device, get_standard_device
+from src.backend.DeckManagement.InputIdentifier import Input
+from src.backend.PluginManager.EventAssigner import EventAssigner
+from .AudioCore import AudioCore
+from ..globals import Icons
+from ..internal.PulseHelpers import get_device, mute
 
 
-class Mute(DeviceBase):
+class Mute(AudioCore):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.icon_keys = [Icons.MUTED, Icons.UNMUTED]
+
         self.plugin_base.connect_to_event(event_id="com_gapls_AudioControl::PulseEvent",
                                           callback=self.on_pulse_device_change)
-        self.is_muted: bool = False
 
-    def on_ready(self):
-        super().on_ready()
+        self.is_muted = False
+
+        self.create_generative_ui()
+
+    def create_event_assigners(self):
+        self.add_event_assigner(EventAssigner(
+            id="mute",
+            ui_label="Mute",
+            default_events=[Input.Key.Events.DOWN, Input.Dial.Events.DOWN],
+            callback=self.on_mute
+        ))
+
+    def on_update(self):
         self.update_mute_image()
+        super().on_update()
+        return
 
-    #
-    # EVENTS
-    #
-
-    def on_device_changed(self, *args, **kwargs):
-        super().on_device_changed(*args, **kwargs)
-        self.update_mute_image()
-
-    def on_use_standard_changed(self, *args):
-        super().on_use_standard_changed(*args)
-        self.update_mute_image()
-
-    async def on_pulse_device_change(self, *args, **kwargs):
-        if len(args) < 2:
-            return
-
-        event = args[1]
-
-        if self.use_standard:
-            device = get_standard_device(self.device_filter)
-            index = device.index
-        else:
-            index = self.device_index
-
-        if event.index == index:
-            with pulsectl.Pulse("mute-event") as pulse:
-                try:
-                    if self.use_standard:
-                        device = get_standard_device(self.device_filter)
-                    else:
-                        device = get_device(self.device_filter, self.pulse_device_name)
-                    self.is_muted = bool(device.mute)
-                    self.display_mute_image()
-                    self.display_info()
-                except:
-                    self.show_error(1)
-
-    def on_key_down(self):
-        if self.pulse_device_name is None:
+    def on_mute(self, event):
+        if self.selected_device is None:
             self.show_error(1)
             return
 
         try:
-            if self.use_standard:
-                device = get_standard_device(self.device_filter)
-            else:
-                device = get_device(self.device_filter, self.pulse_device_name)
-
-            self.is_muted = not device.mute
-            mute(device, self.is_muted)
-            self.display_mute_image()
+            device = get_device(self.device_filter, self.selected_device.pulse_name)
+            self.mute(device)
         except Exception as e:
-            log.error(e)
+            log.error(f"Error while muting: {e}")
             self.show_error(1)
 
-    async def on_asset_manager_change(self, *args):
-        if args[1] == "mute" or args[1] == "audio":
-            self.display_mute_image()
-
-    #
-    # MISC
-    #
+    ########### UI STUFF ###########
 
     def update_mute_image(self):
-        try:
-            if self.use_standard:
-                device = get_standard_device(self.device_filter)
-            else:
-                device = get_device(self.device_filter, self.pulse_device_name)
-            self.is_muted = bool(device.mute)
-            self.display_mute_image()
-        except:
-            self.show_error(1)
+        with pulsectl.Pulse(f"mute-event") as pulse:
+            try:
+                device = get_device(self.device_filter, self.selected_device.pulse_name)
+                self.is_muted = bool(device.mute)
 
-    #
-    # DISPLAY
-    #
+                self.set_current_icon()
+                self.display_device_info()
+            except Exception as e:
+                log.error(f"Error while updating mute image: {e}")
+                self.show_error(1)
+
+    def mute(self, device):
+        self.is_muted = not device.mute
+
+        self.set_current_icon()
+
+        mute(device, self.is_muted)
+
+    def set_current_icon(self):
+        if self.is_muted:
+            self._current_icon = self.get_icon(Icons.MUTED)
+            self._icon_name = Icons.MUTED
+        else:
+            self._current_icon = self.get_icon(Icons.UNMUTED)
+            self._icon_name = Icons.UNMUTED
+
+        self.display_icon()
+
+    async def on_pulse_device_change(self, *args, **kwargs):
+        await super().on_pulse_device_change(*args, **kwargs)
+        self.update_mute_image()
 
     def display_adjustment(self):
         if self.is_muted:
             return "Muted"
         return "Unmuted"
-
-    def display_mute_image(self):
-        if self.is_muted:
-            _, render = self.plugin_base.asset_manager.icons.get_asset_values("mute")
-        else:
-            _, render = self.plugin_base.asset_manager.icons.get_asset_values("audio")
-        self.set_media(render)

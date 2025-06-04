@@ -2,21 +2,26 @@
 import os.path
 
 import pulsectl
+from gi.repository import Gtk
 
 from src.backend.PluginManager.ActionHolder import ActionHolder
 from src.backend.PluginManager.ActionInputSupport import ActionInputSupport
+from src.backend.PluginManager.EventHolder import EventHolder
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.DeckManagement.InputIdentifier import Input
+from src.backend.DeckManagement.ImageHelpers import image2pixbuf
 
-from .internal.AssetManager.AssetManager import AssetManager, Icon
-
-from .actions.AdjustVolume import AdjustVolume
-from .actions.Mute import Mute
-from .actions.SetVolume import SetVolume
-from .actions.VolumeDisplay import VolumeDisplay
-from .actions.DialController import DialController
 from .internal.PulseEventListener import PulseEvent
 
+from .actions.Mute import Mute
+from .actions.SetVolume import SetVolume
+from .actions.AdjustVolume import AdjustVolume
+from .actions.ToggleDefaultDevice import ToggleDefaultDevice
+from .actions.VolumeWarning import VolumeWarning
+from .actions.AudioDisplay import AudioDisplay
+from .actions.SetDefaultDevice import SetDefaultDevice
+
+from .globals import Icons, Colors
 
 class AudioControl(PluginBase):
     def __init__(self):
@@ -25,76 +30,128 @@ class AudioControl(PluginBase):
 
         self.has_plugin_settings = True
 
-        self.mute_action_holder = ActionHolder(
+        self.audio_display = ActionHolder(
             plugin_base=self,
-            action_base=Mute,
+            action_core=AudioDisplay,
+            action_id_suffix="AudioDisplay",
+            action_name="Audio Display",
+            action_support= {
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
+        )
+        self.add_action_holder(self.audio_display)
+
+        self.mute = ActionHolder(
+            plugin_base=self,
+            action_core=Mute,
             action_id_suffix="Mute",
-            action_name=self.locale_manager.get("name-mute"),
-            action_support={Input.Key: ActionInputSupport.SUPPORTED}
+            action_name="Mute",
+            action_support= {
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
         )
-        self.add_action_holder(self.mute_action_holder)
+        self.add_action_holder(self.mute)
 
-        self.set_volume_action_holder = ActionHolder(
+        self.set_volume = ActionHolder(
             plugin_base=self,
-            action_base=SetVolume,
+            action_core=SetVolume,
             action_id_suffix="SetVolume",
-            action_name=self.locale_manager.get("name-set-vol"),
-            action_support={Input.Key: ActionInputSupport.SUPPORTED}
+            action_name="Set Volume",
+            action_support= {
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
         )
-        self.add_action_holder(self.set_volume_action_holder)
+        self.add_action_holder(self.set_volume)
 
-        self.adjust_volume_action_holder = ActionHolder(
+        self.volume_adjust = ActionHolder(
             plugin_base=self,
-            action_base=AdjustVolume,
+            action_core=AdjustVolume,
             action_id_suffix="AdjustVolume",
-            action_name=self.locale_manager.get("name-adjust-vol"),
-            action_support={Input.Key: ActionInputSupport.SUPPORTED}
+            action_name="Adjust Volume",
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
         )
-        self.add_action_holder(self.adjust_volume_action_holder)
+        self.add_action_holder(self.volume_adjust)
 
-        self.volume_display_action_holder = ActionHolder(
+        self.toggle_default_device = ActionHolder(
             plugin_base=self,
-            action_base=VolumeDisplay,
-            action_id_suffix="VolumeDisplay",
-            action_name=self.locale_manager.get("name-vol-display"),
-            action_support={Input.Key: ActionInputSupport.SUPPORTED}
+            action_core=ToggleDefaultDevice,
+            action_id_suffix="ToggleDefaultDevice",
+            action_name="Toggle Default Device",
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
         )
-        self.add_action_holder(self.volume_display_action_holder)
+        self.add_action_holder(self.toggle_default_device)
 
-        self.dial_controller_action_holder = ActionHolder(
+        self.set_default_device = ActionHolder(
             plugin_base=self,
-            action_base=DialController,
-            action_id_suffix="DialController",
-            action_name=self.locale_manager.get("name-dial"),
-            action_support={Input.Dial: ActionInputSupport.UNTESTED}
+            action_core=SetDefaultDevice,
+            action_id_suffix="SetDefaultDevice",
+            action_name="Set Default Device",
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
         )
-        self.add_action_holder(self.dial_controller_action_holder)
+        self.add_action_holder(self.set_default_device)
+
+        self.volume_warning = ActionHolder(
+            plugin_base=self,
+            action_core=VolumeWarning,
+            action_id_suffix="VolumeWarning",
+            action_name="Volume Warning",
+            action_support={
+                Input.Key: ActionInputSupport.SUPPORTED,
+                Input.Dial: ActionInputSupport.SUPPORTED,
+                Input.Touchscreen: ActionInputSupport.UNTESTED
+            }
+        )
+        self.add_action_holder(self.volume_warning)
 
         # Events
 
         self.pulse_sink_event_holder = PulseEvent(
             self,
             "com_gapls_AudioControl::PulseEvent",
-            "sink", "source"
+            pulsectl.PulseEventMaskEnum.sink,
+            pulsectl.PulseEventMaskEnum.source
         )
         self.add_event_holder(self.pulse_sink_event_holder)
 
         self.register()
 
+    def get_selector_icon(self) -> Gtk.Widget:
+        _, rendered = self.asset_manager.icons.get_asset_values(Icons.MAIN)
+        return Gtk.Image.new_from_pixbuf(image2pixbuf(rendered))
+
     def init_vars(self):
         self.pulse = pulsectl.Pulse("audio-control-main")
-        self.asset_manager = AssetManager(save_path=os.path.join(self.PATH, "asset_overrides.json"))
 
-        self.asset_manager.icons.add_asset("mute", Icon(path=self.get_asset_path("mute.png")))
-        self.asset_manager.icons.add_asset("audio", Icon(path=self.get_asset_path("audio.png")))
-        self.asset_manager.icons.add_asset("vol-down", Icon(path=self.get_asset_path("vol_down.png")))
-        self.asset_manager.icons.add_asset("vol-up", Icon(path=self.get_asset_path("vol_up.png")))
+        self.add_color(Colors.VOLUME_OK, (0,0,0,0))
+        self.add_color(Colors.VOLUME_WARNING, (111,29,29,255))
 
-    def get_asset_path(self, asset_name: str, subdirs: list[str] = None, asset_folder: str = "assets") -> str:
-        if not subdirs:
-            return os.path.join(self.PATH, asset_folder, asset_name)
+        size = 0.7
 
-        subdir = os.path.join(*subdirs)
-        if subdir != "":
-            return os.path.join(self.PATH, asset_folder, subdir, asset_name)
-        return ""
+        self.add_icon(Icons.MAIN, self.get_asset_path("main_icon.png"))
+
+        self.add_icon(Icons.MUTED, self.get_asset_path("audio_muted.png"), size)
+        self.add_icon(Icons.UNMUTED, self.get_asset_path("audio.png"), size)
+        self.add_icon(Icons.VOLUME_DOWN, self.get_asset_path("volume_down.png"), size)
+        self.add_icon(Icons.VOLUME_UP, self.get_asset_path("volume_up.png"), size)
+
+        self.add_icon(Icons.SPEAKER_DEFAULT, self.get_asset_path("speaker_default.png"))
+        self.add_icon(Icons.HEADPHONE_DEFAULT, self.get_asset_path("headphone_default.png"))
+        self.add_icon(Icons.NONE_DEFAULT, self.get_asset_path("none_default.png"))
