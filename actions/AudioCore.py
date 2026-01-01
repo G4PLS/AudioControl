@@ -104,9 +104,19 @@ class AudioCore(ActionCore):
             on_change=self.device_changed
         )
 
+        # Hidden entry to store human-readable device name
+        self.device_name_entry = EntryRow(
+            action_core=self,
+            var_name="pulse-device-name",
+            default_value="",
+            title="Device Name (Hidden)",
+            complex_var_name=False
+        )
+
         self.device_expander.add_row(self.standard_device_switch.widget)
         self.device_expander.add_row(self.device_filter_combo_row.widget)
         self.device_expander.add_row(self.device_combo_row.widget)
+        # Don't add device_name_entry to UI - it's just for storage
 
         # Use Standard Device Toggle/Switch
 
@@ -206,7 +216,32 @@ class AudioCore(ActionCore):
             log.error(f"Error while populating device list: {e}")
             return
 
-        self.device_combo_row.populate(self.loaded_devices, self.device_combo_row.get_value())
+        # Get the configured device pulse_name from settings
+        configured_pulse_name = self.device_combo_row.get_value()
+
+        # Check if configured device is in the available list
+        device_available = any(d.pulse_name == configured_pulse_name for d in self.loaded_devices)
+
+        # If configured device is not available, create a placeholder Device object for it
+        if configured_pulse_name and not device_available:
+            # Retrieve the saved human-readable device name
+            saved_device_name = self.device_name_entry.get_value()
+
+            if saved_device_name:
+                display_name = f"{saved_device_name} (Unavailable)"
+            else:
+                display_name = f"{configured_pulse_name} (Unavailable)"
+
+            # Create a Device object for the unavailable device
+            placeholder_device = Device(
+                pulse_name=configured_pulse_name,
+                pulse_index=-1,  # Invalid index indicates unavailable
+                device_name=display_name
+            )
+            # Add it to loaded_devices so it can be selected
+            self.loaded_devices.insert(0, placeholder_device)
+
+        self.device_combo_row.populate(self.loaded_devices, configured_pulse_name)
         self.display_device_info()
 
     # UI Events
@@ -222,6 +257,11 @@ class AudioCore(ActionCore):
 
     def device_changed(self, widget, value, old):
         self.selected_device = value
+
+        # Save the human-readable device name for display when device is unavailable
+        # Only save when it's a real device (not a placeholder with pulse_index == -1)
+        if value and value.device_name and value.pulse_index != -1:
+            self.device_name_entry.set_value(value.device_name)
 
         self.display_device_name()
         self.display_device_info()
@@ -277,6 +317,7 @@ class AudioCore(ActionCore):
 
         if len(volumes) > 0:
             return str(int(volumes[0]))
+
         return "N/A"
 
     def display_adjustment(self):
@@ -295,10 +336,23 @@ class AudioCore(ActionCore):
         self.display_icon()
 
     async def on_pulse_device_change(self, *args, **kwargs):
-        if len(args) < 2 or self.selected_device is None:
+        if len(args) < 2:
             return
 
         event = args[1]
+
+        # Reload devices when a new device is added or removed
+        # This ensures that unavailable devices become available when plugged in
+        if hasattr(event, 't'):
+            event_type = event.t
+
+            if event_type in ['new', 'remove']:
+                self.load_devices()
+                return
+
+        if self.selected_device is None:
+            return
+
         index = self.selected_device.pulse_index
 
         if event.index == index:

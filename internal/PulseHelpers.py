@@ -56,6 +56,28 @@ def filter_proplist(proplist) -> str | None:
     return None
 
 
+def validate_device(device, requested_name: str) -> bool:
+    """
+    Validates that the returned device is actually the requested device.
+    Returns False if device is None or if it's a fallback device.
+
+    Args:
+        device: The device object from pulsectl
+        requested_name: The original device name requested
+
+    Returns:
+        bool: True if device matches the request, False otherwise
+    """
+    if device is None:
+        return False
+
+    # Check if the device name matches what was requested
+    if not hasattr(device, 'name') or device.name != requested_name:
+        return False
+
+    return True
+
+
 def get_device(filter: DeviceFilter, pulse_device_name):
     with pulsectl.Pulse("device-getter") as pulse:
         try:
@@ -64,6 +86,11 @@ def get_device(filter: DeviceFilter, pulse_device_name):
                 device = pulse.get_sink_by_name(pulse_device_name)
             elif filter == DeviceFilter.SOURCE.get_value():
                 device = pulse.get_source_by_name(pulse_device_name)
+
+            # Validate that we got the correct device, not a fallback
+            if not validate_device(device, pulse_device_name):
+                return None
+
             return device
         except Exception as e:
             log.error(f"Error while getting device: {pulse_device_name} with filter: {filter}. Error: {e}")
@@ -88,6 +115,10 @@ def get_volumes_from_device(device_filter: DeviceFilter, pulse_device_name: str)
         return []
 
 def change_volume(device, adjust):
+    # Silently skip if device is None/unavailable
+    if device is None:
+        return
+
     with pulsectl.Pulse("change-volume") as pulse:
         try:
             pulse.volume_change_all_chans(device, adjust * 0.01)
@@ -98,6 +129,10 @@ def set_default_device(device_filter: DeviceFilter, pulse_device_name: str):
     try:
         device = get_device(device_filter, pulse_device_name)
 
+        # Silently skip if device not available
+        if device is None:
+            return
+
         with pulsectl.Pulse("device-setter") as pulse:
             if device_filter == DeviceFilter.SINK.value:
                 pulse.sink_default_set(device)
@@ -107,6 +142,10 @@ def set_default_device(device_filter: DeviceFilter, pulse_device_name: str):
         log.error(f"Error while settings default device: {e}")
 
 def set_volume(device, volume):
+    # Silently skip if device is None/unavailable
+    if device is None:
+        return
+
     with pulsectl.Pulse("change-volume") as pulse:
         try:
             pulse.volume_set_all_chans(device, volume * 0.01)
@@ -114,6 +153,10 @@ def set_volume(device, volume):
             log.error(f"Error while setting volume on device: {device.name}, volume is {volume}. Error: {e}")
 
 def mute(device, state):
+    # Silently skip if device is None/unavailable
+    if device is None:
+        return
+
     with pulsectl.Pulse("change-volume") as pulse:
         try:
             pulse.mute(device, state)

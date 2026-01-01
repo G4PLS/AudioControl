@@ -1,5 +1,7 @@
 from enum import Enum
 
+from loguru import logger as log
+
 from GtkHelper.ComboRow import SimpleComboRowItem
 from GtkHelper.GenerativeUI.ColorButtonRow import ColorButtonRow
 from GtkHelper.GenerativeUI.ComboRow import ComboRow
@@ -135,7 +137,18 @@ class VolumeWarning(AudioCore):
         if self.warning_color is None or self.default_color is None:
             return
 
+        # Handle case when device is unavailable
+        if self.selected_device is None:
+            self.set_background_color(list(self.default_color))
+            return
+
         volumes = get_volumes_from_device(self.device_filter, self.selected_device.pulse_name)
+
+        # If device unavailable, show default color
+        if len(volumes) == 0:
+            self.set_background_color(list(self.default_color))
+            return
+
         volume = volumes[0]
 
         if self.comparator == Comparator.GT.value and volume > self.warning_threshold:

@@ -41,6 +41,11 @@ class Mute(AudioCore):
 
         try:
             device = get_device(self.device_filter, self.selected_device.pulse_name)
+
+            # Silently skip if device unavailable
+            if device is None:
+                return
+
             self.mute(device)
         except Exception as e:
             log.error(f"Error while muting: {e}")
@@ -49,16 +54,29 @@ class Mute(AudioCore):
     ########### UI STUFF ###########
 
     def update_mute_image(self):
+        if self.selected_device is None:
+            self.is_muted = False
+            self.set_current_icon()
+            return
+
         with pulsectl.Pulse(f"mute-event") as pulse:
             try:
                 device = get_device(self.device_filter, self.selected_device.pulse_name)
-                self.is_muted = bool(device.mute)
+
+                # If device unavailable, show as unmuted
+                if device is None:
+                    self.is_muted = False
+                else:
+                    self.is_muted = bool(device.mute)
 
                 self.set_current_icon()
                 self.display_device_info()
             except Exception as e:
+                # Exception can only come from accessing device.mute (get_device handles its own exceptions)
+                # Safe to recover by showing device as unmuted
                 log.error(f"Error while updating mute image: {e}")
-                self.show_error(1)
+                self.is_muted = False
+                self.set_current_icon()
 
     def mute(self, device):
         self.is_muted = not device.mute
