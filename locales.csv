@@ -9,6 +9,7 @@ base-filter-dropdown;Device Filter;Audio Filter
 base-device-dropdown;Device;Audiogerät
 base-info-toggle;Show Info;Info Anzeigen
 base-info-content;Info Content;Inhalt
+base-content-location;Location;Location
 base-name-toggle;Show Name;Zeige Gerätename
 base-nick;Device Nick;Geräte Nickname
 ;;
