@@ -9,7 +9,7 @@ from GtkHelper.GenerativeUI.ExpanderRow import ExpanderRow
 from GtkHelper.GenerativeUI.SwitchRow import SwitchRow
 from src.backend.PluginManager.ActionCore import ActionCore
 from ..internal.PulseHelpers import DeviceFilter, get_device_list, filter_proplist, get_volumes_from_device, \
-    get_standard_device
+    get_standard_device, is_monitor_source
 
 
 class InfoContent(enum.Enum):
@@ -189,13 +189,18 @@ class AudioCore(ActionCore):
             self.loaded_devices = []
 
             for device in device_list:
-                if device.description.__contains__("Monitor"):
-                    continue
+                if self.device_filter and self.device_filter.get_value() == DeviceFilter.SOURCE.get_value():
+                    if is_monitor_source(device):
+                        continue
 
                 device_name = filter_proplist(device.proplist)
 
                 if device_name is None:
-                    continue
+                    device_name = device.description or device.name
+
+                    if not device_name:
+                        log.warning(f"Skipping device without a usable name: {device.name}")
+                        continue
 
                 self.loaded_devices.append(Device(
                     pulse_name=device.name,

@@ -56,6 +56,12 @@ def filter_proplist(proplist) -> str | None:
     return None
 
 
+def is_monitor_source(device) -> bool:
+    if getattr(device, "monitor_of_sink_name", None) is not None:
+        return True
+    return device.name.endswith(".monitor")
+
+
 def get_device(filter: DeviceFilter, pulse_device_name):
     with pulsectl.Pulse("device-getter") as pulse:
         try:
