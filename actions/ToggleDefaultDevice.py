@@ -12,7 +12,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 from ..internal.PulseHelpers import DeviceFilter, get_device_list, filter_proplist, get_volumes_from_device, \
-    get_standard_device, set_default_device
+    get_standard_device, set_default_device, is_monitor_source
 
 from .AudioCore import Device, InfoContent
 
@@ -374,13 +374,18 @@ class ToggleDefaultDevice(ActionCore):
             self.loaded_devices = []
 
             for device in device_list:
-                if device.description.__contains__("Monitor"):
-                    continue
+                if self.device_filter and self.device_filter.get_value() == DeviceFilter.SOURCE.get_value():
+                    if is_monitor_source(device):
+                        continue
 
                 device_name = filter_proplist(device.proplist)
 
                 if device_name is None:
-                    continue
+                    device_name = device.description or device.name
+
+                    if not device_name:
+                        log.warning(f"Skipping device without a usable name: {device.name}")
+                        continue
 
                 self.loaded_devices.append(Device(
                     pulse_name=device.name,
