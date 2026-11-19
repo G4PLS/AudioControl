@@ -173,6 +173,27 @@ class AudioCore(ActionCore):
     def create_event_assigners(self):
         pass
 
+    def on_ready(self):
+        # use_standard_device and device_filter are otherwise only assigned by the
+        # UI callbacks (show_standard_device_changed / device_filter_changed), and
+        # load_devices() is only called from device_filter_changed. So until the
+        # user opens this action's config, a freshly started app keeps the combo
+        # rows' *defaults* and selected_device stays None - which leaves keys blank
+        # and makes every action that guards on `selected_device is None` dead.
+        #
+        # Restore both from the saved settings, then populate the device list.
+        self.use_standard_device = self.standard_device_switch.get_value()
+
+        saved_filter = self.device_filter_combo_row.get_value()
+        for device_filter in DeviceFilter:
+            if device_filter.get_value() == saved_filter:
+                self.device_filter = device_filter.value
+                break
+
+        # populate(..., trigger_callback=True) fires device_changed, which restores
+        # selected_device from the saved pulse-name.
+        self.load_devices()
+
     def on_update(self):
         self.display_device_name()
         self.display_device_info()

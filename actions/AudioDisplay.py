@@ -18,6 +18,7 @@ class AudioDisplay(AudioCore):
         super().create_generative_ui()
 
     def on_ready(self):
+        super().on_ready()
         self.info_content_combo_row.populate([InfoContent.VOLUME.value])
 
     def on_update(self):

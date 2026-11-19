@@ -29,6 +29,10 @@ class Mute(AudioCore):
             callback=self.on_mute
         ))
 
+    def on_ready(self):
+        super().on_ready()
+        self.update_mute_image()
+
     def on_update(self):
         self.update_mute_image()
         super().on_update()
@@ -49,6 +53,10 @@ class Mute(AudioCore):
     ########### UI STUFF ###########
 
     def update_mute_image(self):
+        if self.selected_device is None:
+            # on_update() can fire before on_ready() has resolved the device.
+            # Stay quiet rather than flashing a 1s error overlay on every start.
+            return
         with pulsectl.Pulse(f"mute-event") as pulse:
             try:
                 device = get_device(self.device_filter, self.selected_device.pulse_name)
